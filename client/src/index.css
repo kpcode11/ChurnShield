@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 96%;
+    --foreground: 210 50% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 50% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 50% 18%;
+
+    --primary: 209 53% 23%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 209 53% 23%;
+
+    --muted: 220 14% 90%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 209 53% 23%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 209 53% 23%;
+    --sidebar-foreground: 210 40% 92%;
+    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 209 50% 30%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 209 45% 30%;
+    --sidebar-ring: 38 92% 50%;
+
+    --chart-1: 209 53% 23%;
+    --chart-2: 38 92% 50%;
+    --chart-3: 160 84% 39%;
+    --chart-4: 0 72% 51%;
+    --chart-5: 270 60% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .card-shadow {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  }
+  .card-shadow-hover {
+    box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+  }
+}
