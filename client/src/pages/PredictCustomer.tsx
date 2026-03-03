@@ -89,7 +89,7 @@ export default function PredictCustomer() {
     if (riskFactors.length === 0)      riskFactors.push({ icon: "✅", text: "No major churn signals detected" });
   }
 
-  const riskPct = result ? Math.round(result.probability * 100) : 0;
+  const riskPct = result ? Math.round(result.probability_pct) : 0;
   const riskLevel = result?.risk ?? "Low";
 
   return (
@@ -164,7 +164,7 @@ export default function PredictCustomer() {
                 <p className="text-4xl font-bold text-card-foreground mt-2">{riskPct}%</p>
                 <Progress value={riskPct} className={`mt-3 h-3 ${progressColors[riskLevel]}`} />
                 <p className="text-sm text-muted-foreground mt-3">
-                  Model confidence: {(result.probability * 100).toFixed(1)}% probability of churn
+                  Model confidence: {result.probability_pct.toFixed(1)}% probability of churn
                   {result.churn === 1 ? " — customer predicted to churn." : " — customer predicted to stay."}
                 </p>
               </div>

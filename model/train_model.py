@@ -172,7 +172,7 @@ def train_model(df: pd.DataFrame):
         reg_lambda=1.0,
         scale_pos_weight=spw,       # corrects 5:1 imbalance
         random_state=42,
-        eval_metric="logloss",      # no use_label_encoder (removed in XGBoost 2.x)
+        eval_metric="logloss",      # deprecated encoder param removed in XGBoost 2.x
         n_jobs=-1,
     )
     model.fit(

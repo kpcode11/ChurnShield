@@ -44,7 +44,8 @@ export interface CustomerInput {
 
 export interface PredictResponse {
   churn: 0 | 1;
-  probability: number;
+  probability: number;       // 0.0–1.0
+  probability_pct: number;   // 0.0–100.0 (pre-computed by backend)
   risk: "Low" | "Medium" | "High";
 }
 
@@ -57,10 +58,21 @@ export interface SuggestInput {
   Tenure?: number;
 }
 
+export interface ChurnSignal {
+  rank: number;
+  key: string;
+  label: string;
+  action_type: string;
+  reason: string;
+  suggestion: string;
+}
+
 export interface SuggestResponse {
   reason: string;
   suggestion: string;
-  action_type: "call" | "email" | "coupon";
+  action_type: string;                    // e.g. "call", "email", "coupon", "cashback"…
+  churn_signals: ChurnSignal[];           // all triggered signals ranked by severity
+  priority: "critical" | "high" | "medium" | "low";
 }
 
 // Matches backend RevenueInput schema
@@ -143,25 +155,87 @@ export interface MessageInput {
   customer_segment: string;
   suggestion: string;
   tone?: string;
+  channel?: string;
+  churn_signals?: object[];
 }
 
 export interface MessageResponse {
   message: string;
-  source: "ai" | "template";
+  source: "ollama" | "claude" | "template";
+}
+
+// Matches backend MessageSendInput schema
+export interface MessageSendInput {
+  customer_segment: string;
+  suggestion: string;
+  to_number: string;          // E.164, e.g. '+919876543210'
+  tone?: string;
+  channel?: string;
+  churn_signals?: object[];
+}
+
+export interface MessageDelivery {
+  success: boolean;
+  sid: string | null;
+  status: string;
+  error: string | null;
+}
+
+export interface MessageSendResponse {
+  message: string;
+  source: "ollama" | "claude" | "template";
+  delivery: MessageDelivery;
 }
 
 // Matches backend GET /analytics response
+export interface KpiPair {
+  churned: number;
+  stayed:  number;
+}
+
+export interface KpiComparison {
+  avg_cashback:          KpiPair;
+  avg_orders:            KpiPair;
+  avg_order_hike_pct:    KpiPair;
+  avg_app_hours:         KpiPair;
+  avg_days_since_order:  KpiPair;
+  avg_warehouse_to_home: KpiPair;
+  avg_coupons_used:      KpiPair;
+  avg_num_devices:       KpiPair;
+  avg_complain_rate:     KpiPair;
+}
+
 export interface AnalyticsData {
-  total_customers: number;
-  churned_customers: number;
-  overall_churn_rate: number;
-  churn_by_city_tier: Record<string, number>;
-  churn_by_gender: Record<string, number>;
-  churn_by_satisfaction: Record<string, number>;
-  churn_by_device: Record<string, number>;
+  total_customers:          number;
+  churned_customers:        number;
+  overall_churn_rate:       number;
+  churn_by_city_tier:       Record<string, number>;
+  churn_by_gender:          Record<string, number>;
+  churn_by_satisfaction:    Record<string, number>;
+  churn_by_device:          Record<string, number>;
+  churn_by_marital_status:  Record<string, number>;
+  churn_by_category:        Record<string, number>;
+  churn_by_payment_mode:    Record<string, number>;
   avg_days_since_last_order: { churned: number; stayed: number };
-  churn_by_tenure: Record<string, number>;
-  churn_by_category: Record<string, number>;
+  churn_by_tenure:          Record<string, number>;
+  kpi_comparison:           KpiComparison;
+}
+
+// Matches backend GET /analytics/trends response
+export interface MonthlyTrendPoint {
+  month:        number;   // Tenure month on platform (0-60)
+  churned:      number;
+  stayed:       number;
+  total:        number;
+  churn_rate:   number;   // raw %
+  rolling_rate: number;   // smoothed 3-month rolling average %
+}
+
+export interface TrendsData {
+  monthly_trend:          MonthlyTrendPoint[];
+  rolling_window:         number;
+  peak_churn_month:       { month: number; churn_rate: number };
+  stabilizes_after_month: number;
 }
 
 // ─── Core fetch wrapper ──────────────────────────────────────────────────────
@@ -251,6 +325,10 @@ export const bulkPredict = (file: File, signal?: AbortSignal): Promise<Blob> => 
 export const fetchAnalytics = (signal?: AbortSignal) =>
   api.get<AnalyticsData>("/analytics", signal);
 
+/** GET /analytics/trends — monthly churn time-series (Tenure as lifecycle axis) */
+export const fetchAnalyticsTrends = (signal?: AbortSignal) =>
+  api.get<TrendsData>("/analytics/trends", signal);
+
 /** POST /revenue — simple aggregate revenue impact calculation */
 export const calcRevenueImpact = (payload: RevenueInput) =>
   api.post<RevenueResponse>("/revenue", payload);
@@ -259,7 +337,11 @@ export const calcRevenueImpact = (payload: RevenueInput) =>
 export const calcGranularRevenueImpact = (payload: RevenueImpactInput) =>
   api.post<RevenueImpactResponse>("/metrics/revenue-impact", payload);
 
-/** POST /message — AI / template-based retention message */
+/** POST /message — AI / template-based retention message (generate only) */
 export const generateRetentionMessage = (payload: MessageInput) =>
   api.post<MessageResponse>("/message", payload);
+
+/** POST /message/send — generate + dispatch via Twilio WhatsApp */
+export const sendRetentionMessage = (payload: MessageSendInput) =>
+  api.post<MessageSendResponse>("/message/send", payload);
 

@@ -7,6 +7,8 @@ import os
 import io
 import sys
 import math
+from dotenv import load_dotenv
+load_dotenv()   # loads .env from the project root before anything else reads os.environ
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -161,10 +163,19 @@ from backend.revenue import (
     calculate_customer_revenue_risk,
     calculate_roi,
 )
-from backend.message_generator import generate_message
+from backend.message_generator import generate_message, generate_and_send
+from backend.analytics import build_analytics_response, build_trends_response
 
-# ──────────────────── DATA PATH ────────────────────
+# ──────────────────── DATA PATH + CACHED DATAFRAME ────────────────────
 DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "ecommerce_churn.csv")
+
+# Load the dataset once at startup and cache it in memory.
+# All analytics endpoints read from this shared, immutable DataFrame.
+# Re-reads happen only if the process is restarted (acceptable for a CSV-backed app).
+try:
+    _df_cache: pd.DataFrame = pd.read_csv(DATA_PATH)
+except FileNotFoundError:
+    _df_cache = pd.DataFrame()  # empty sentinel; endpoints will raise 503
 
 # ──────────────────── APP ────────────────────
 app = FastAPI(
@@ -256,6 +267,17 @@ class MessageInput(BaseModel):
     customer_segment: str
     suggestion: str
     tone: Optional[str] = "warm, concise"
+    channel: Optional[str] = "WhatsApp"
+    churn_signals: Optional[list] = None   # ranked list from /suggest
+
+
+class MessageSendInput(BaseModel):
+    customer_segment: str
+    suggestion: str
+    to_number: str           # E.164, e.g. '+919876543210'
+    tone: Optional[str] = "warm, concise"
+    channel: Optional[str] = "WhatsApp"
+    churn_signals: Optional[list] = None
 
 
 # ──────────────────── ENDPOINTS ────────────────────
@@ -338,92 +360,56 @@ async def bulk_predict_alias(file: UploadFile = File(...)):
 # ---------- 3. GET /analytics — Live Analytics Dashboard Data ----------
 @app.get("/analytics")
 def get_analytics():
-    """Module 3: Aggregated analytics for the dashboard."""
-    df = pd.read_csv(DATA_PATH)
+    """
+    Module 3: Full aggregated analytics payload for the dashboard.
 
-    total = len(df)
-    churned = int(df["Churn"].sum())
-    overall_churn_rate = round(churned / total * 100, 2)
-
-    # Churn rate by CityTier
-    churn_by_city = (
-        df.groupby("CityTier")["Churn"]
-        .mean()
-        .mul(100)
-        .round(2)
-        .to_dict()
-    )
-
-    # Churn rate by Gender
-    churn_by_gender = (
-        df.groupby("Gender")["Churn"]
-        .mean()
-        .mul(100)
-        .round(2)
-        .to_dict()
-    )
-
-    # Churn rate by SatisfactionScore
-    churn_by_satisfaction = (
-        df.groupby("SatisfactionScore")["Churn"]
-        .mean()
-        .mul(100)
-        .round(2)
-        .to_dict()
-    )
-
-    # Churn rate by PreferredLoginDevice
-    churn_by_device = (
-        df.groupby("PreferredLoginDevice")["Churn"]
-        .mean()
-        .mul(100)
-        .round(2)
-        .to_dict()
-    )
-
-    # Avg DaySinceLastOrder: churned vs stayed
-    avg_days_churned_raw = df[df["Churn"] == 1]["DaySinceLastOrder"].mean()
-    avg_days_stayed_raw = df[df["Churn"] == 0]["DaySinceLastOrder"].mean()
-    avg_days_churned = round(float(avg_days_churned_raw), 2) if not pd.isna(avg_days_churned_raw) else 0.0
-    avg_days_stayed = round(float(avg_days_stayed_raw), 2) if not pd.isna(avg_days_stayed_raw) else 0.0
-
-    # Monthly churn trend (using Tenure as proxy for months)
-    tenure_bins = [0, 6, 12, 18, 24, 36, 48, 60, 100]
-    tenure_labels = ["0-6", "7-12", "13-18", "19-24", "25-36", "37-48", "49-60", "60+"]
-    df["TenureBucket"] = pd.cut(df["Tenure"], bins=tenure_bins, labels=tenure_labels)
-    churn_by_tenure = (
-        df.groupby("TenureBucket", observed=False)["Churn"]
-        .mean()
-        .mul(100)
-        .round(2)
-        .to_dict()
-    )
-
-    # Churn by PreferedOrderCat
-    churn_by_category = (
-        df.groupby("PreferedOrderCat")["Churn"]
-        .mean()
-        .mul(100)
-        .round(2)
-        .to_dict()
-    )
-
-    result = {
-        "total_customers": total,
-        "churned_customers": churned,
-        "overall_churn_rate": overall_churn_rate,
-        "churn_by_city_tier": {str(k): v for k, v in churn_by_city.items()},
-        "churn_by_gender": churn_by_gender,
-        "churn_by_satisfaction": {str(k): v for k, v in churn_by_satisfaction.items()},
-        "churn_by_device": churn_by_device,
-        "avg_days_since_last_order": {
-            "churned": avg_days_churned,
-            "stayed": avg_days_stayed,
-        },
-        "churn_by_tenure": churn_by_tenure,
-        "churn_by_category": churn_by_category,
+    Returns
+    -------
+    {
+      total_customers         int
+      churned_customers       int
+      overall_churn_rate      float   (%)
+      churn_by_city_tier      {tier: pct}
+      churn_by_gender         {gender: pct}
+      churn_by_satisfaction   {score: pct}
+      churn_by_device         {device: pct}
+      churn_by_marital_status {status: pct}
+      churn_by_category       {category: pct}
+      churn_by_payment_mode   {mode: pct}
+      churn_by_tenure         {band: pct}
+      avg_days_since_last_order  {churned: float, stayed: float}
+      kpi_comparison          {metric: {churned: float, stayed: float}}
     }
-    return _clean_for_json(result)
+    """
+    if _df_cache.empty:
+        raise HTTPException(status_code=503, detail="Dataset not available.")
+    return _clean_for_json(build_analytics_response(_df_cache))
+
+
+@app.get("/analytics/trends")
+def get_analytics_trends():
+    """
+    Module 3b: Monthly churn time-series using Tenure as the lifecycle axis.
+
+    The dataset has no calendar date column so `Tenure` (months on platform,
+    0-60) serves as the time dimension.  At each month T, the churn_rate is
+    the proportion of customers with exactly Tenure == T who churned — this
+    is the customer lifecycle hazard curve.
+
+    Returns
+    -------
+    {
+      monthly_trend : [
+        { month, churned, stayed, total, churn_rate, rolling_rate }, ...
+      ]
+      rolling_window         int
+      peak_churn_month       {month, churn_rate}
+      stabilizes_after_month int  — first month where rolling_rate < 20%%
+    }
+    """
+    if _df_cache.empty:
+        raise HTTPException(status_code=503, detail="Dataset not available.")
+    return _clean_for_json(build_trends_response(_df_cache))
 
 
 # ---------- 4. POST /revenue — Revenue Impact Calculator ----------
@@ -524,11 +510,53 @@ def suggest_retention(customer: SuggestInput):
 # ---------- 6. POST /message — AI Message Generator ----------
 @app.post("/message")
 def generate_retention_message(data: MessageInput):
-    """Module 6: Generate a personalised retention message."""
+    """Module 6: Generate a personalised retention message (Ollama → Claude → template)."""
     return generate_message(
-        customer_segment=data.customer_segment,
-        suggestion=data.suggestion,
-        tone=data.tone,
+        customer_segment = data.customer_segment,
+        suggestion       = data.suggestion,
+        tone             = data.tone,
+        channel          = data.channel or "WhatsApp",
+        churn_signals    = data.churn_signals,
+    )
+
+
+# ---------- 6b. POST /message/send — Generate + dispatch via Twilio WhatsApp ----------
+@app.post("/message/send")
+def send_retention_message(data: MessageSendInput):
+    """
+    Generate a retention message and immediately send it via Twilio WhatsApp.
+
+    Requires TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables.
+
+    Input
+    -----
+    customer_segment  str   e.g. 'inactive', 'complaint'
+    suggestion        str   retention offer text
+    to_number         str   recipient E.164 phone, e.g. '+919876543210'
+    tone              str   (optional) tone instruction
+    channel           str   (optional, default 'WhatsApp') label used in LLM prompt
+    churn_signals     list  (optional) from POST /suggest response
+
+    Output
+    ------
+    {
+      message  : str   -- generated message text
+      source   : str   -- 'ollama' | 'claude' | 'template'
+      delivery : {
+        success : bool
+        sid     : str | null   -- Twilio message SID
+        status  : str
+        error   : str | null
+      }
+    }
+    """
+    return generate_and_send(
+        customer_segment = data.customer_segment,
+        suggestion       = data.suggestion,
+        to_number        = data.to_number,
+        tone             = data.tone or "warm, concise",
+        channel          = data.channel or "WhatsApp",
+        churn_signals    = data.churn_signals,
     )
 
 

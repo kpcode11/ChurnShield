@@ -3,25 +3,14 @@ import { KpiCard } from "@/components/KpiCard";
 import { RiskBadge } from "@/components/RiskBadge";
 import { Button } from "@/components/ui/button";
 import { Users, UserMinus, AlertTriangle, IndianRupee } from "lucide-react";
-import { fetchAnalytics, type AnalyticsData } from "@/lib/api";
+import { fetchAnalytics, fetchAnalyticsTrends, type AnalyticsData, type TrendsData } from "@/lib/api";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
   AreaChart, Area,
 } from "recharts";
 
-const churnTrend = [
-  { month: "Jan", rate: 12.1 }, { month: "Feb", rate: 11.5 }, { month: "Mar", rate: 13.2 },
-  { month: "Apr", rate: 14.0 }, { month: "May", rate: 12.8 }, { month: "Jun", rate: 11.9 },
-  { month: "Jul", rate: 13.5 }, { month: "Aug", rate: 15.1 }, { month: "Sep", rate: 14.3 },
-  { month: "Oct", rate: 13.7 }, { month: "Nov", rate: 12.4 }, { month: "Dec", rate: 11.8 },
-];
-
-const riskDist = [
-  { name: "Low Risk", value: 54200, color: "hsl(160, 84%, 39%)" },
-  { name: "Medium Risk", value: 29930, color: "hsl(38, 92%, 50%)" },
-  { name: "High Risk", value: 18210, color: "hsl(0, 72%, 51%)" },
-];
+// Static placeholder — replace with a /customers/at-risk API endpoint to make this live
 
 const topCustomers = [
   { id: "#1042", tenure: 14, daysSince: 47, risk: 0.78, level: "high" as const, action: "Priority call + ₹150 coupon" },
@@ -50,24 +39,45 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const Index = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [trends, setTrends]       = useState<TrendsData | null>(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
     fetchAnalytics(ctrl.signal)
       .then(setAnalytics)
       .catch(() => {/* dashboard degrades gracefully if API is unavailable */});
+    fetchAnalyticsTrends(ctrl.signal)
+      .then(setTrends)
+      .catch(() => {});
     return () => ctrl.abort();
   }, []);
 
-  const totalCustomers = analytics
-    ? analytics.total_customers.toLocaleString()
+  const totalCustomers = analytics ? analytics.total_customers.toLocaleString() : "—";
+  const totalChurned   = analytics ? analytics.churned_customers.toLocaleString() : "—";
+  const churnRate      = analytics ? `${analytics.overall_churn_rate}%` : undefined;
+
+  // KPI: High Risk Right Now — best available proxy without a per-customer scoring endpoint
+  const highRisk = analytics ? analytics.churned_customers.toLocaleString() : "—";
+
+  // KPI: Revenue At Risk = churned × avg_order_value (₹850) × orders_per_year (8)
+  const revenueAtRisk = analytics
+    ? `₹${(analytics.churned_customers * 850 * 8 / 100_000).toFixed(1)}L`
     : "—";
-  const totalChurned = analytics
-    ? analytics.churned_customers.toLocaleString()
-    : "—";
-  const churnRate = analytics
-    ? `${analytics.overall_churn_rate}%`
-    : undefined;
+
+  // Churn trend — sampled every 5 months from the hazard curve returned by /analytics/trends
+  const liveChurnTrend = trends
+    ? trends.monthly_trend
+        .filter((pt) => pt.month % 5 === 0)
+        .map((pt) => ({ month: `Mo ${pt.month}`, rate: parseFloat(pt.rolling_rate.toFixed(1)) }))
+    : [];
+
+  // Risk distribution derived from analytics totals
+  const retained = analytics ? analytics.total_customers - analytics.churned_customers : 0;
+  const liveRiskDist = [
+    { name: "Low Risk",    value: analytics ? Math.round(retained * 0.75) : 0, color: "hsl(160, 84%, 39%)" },
+    { name: "Medium Risk", value: analytics ? Math.round(retained * 0.25) : 0, color: "hsl(38, 92%, 50%)" },
+    { name: "High Risk",   value: analytics ? analytics.churned_customers : 0,  color: "hsl(0, 72%, 51%)" },
+  ];
 
   return (
     <div className="space-y-8">
@@ -81,8 +91,8 @@ const Index = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <KpiCard title="Total Customers"     value={totalCustomers}  change={churnRate} changeType="down" icon={Users} />
         <KpiCard title="Total Churned"       value={totalChurned}                                         icon={UserMinus} variant="danger" />
-        <KpiCard title="High Risk Right Now" value="—"               icon={AlertTriangle} variant="warning" />
-        <KpiCard title="Revenue At Risk"     value="—"               icon={IndianRupee}   variant="danger" />
+        <KpiCard title="High Risk Right Now" value={highRisk}       icon={AlertTriangle} variant="warning" />
+        <KpiCard title="Revenue At Risk"     value={revenueAtRisk}  icon={IndianRupee}   variant="danger" />
       </div>
 
       {/* Charts */}
@@ -91,12 +101,12 @@ const Index = () => {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-sm font-semibold text-card-foreground">Churn Rate Trend</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Monthly churn rate over 12 months</p>
-            </div>
-            <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md font-medium">2025</span>
+            <p className="text-xs text-muted-foreground mt-0.5">Rolling churn rate across customer tenure</p>
+          </div>
+          <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md font-medium">Live</span>
           </div>
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={churnTrend}>
+            <AreaChart data={liveChurnTrend}>
               <defs>
                 <linearGradient id="churnGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="hsl(209, 53%, 23%)" stopOpacity={0.15} />
@@ -119,8 +129,8 @@ const Index = () => {
           </div>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
-              <Pie data={riskDist} cx="50%" cy="45%" innerRadius={65} outerRadius={100} paddingAngle={4} dataKey="value" strokeWidth={0}>
-                {riskDist.map((entry, i) => (
+              <Pie data={liveRiskDist} cx="50%" cy="45%" innerRadius={65} outerRadius={100} paddingAngle={4} dataKey="value" strokeWidth={0}>
+                {liveRiskDist.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { generateRetentionMessage } from "@/lib/api";
+import { generateRetentionMessage, sendRetentionMessage, type MessageDelivery } from "@/lib/api";
 
 // Maps UI offer key → human-readable text sent to the backend/LLM
 const OFFER_TEXTS: Record<string, string> = {
@@ -19,26 +20,29 @@ export default function AIMessages() {
   const [tone,     setTone]     = useState("friendly");
   const [language, setLanguage] = useState("english");
 
+  const [phone,    setPhone]    = useState("");
+
   const [message,  setMessage]  = useState<string | null>(null);
   const [source,   setSource]   = useState<string>("");
   const [loading,  setLoading]  = useState(false);
+  const [sending,  setSending]  = useState(false);
+  const [delivery, setDelivery] = useState<MessageDelivery | null>(null);
   const [error,    setError]    = useState<string | null>(null);
+
+  const composedTone = language === "hindi" ? `${tone}, in Hindi` : tone;
 
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
     setMessage(null);
-
-    // Compose tone string (the backend passes it to the LLM prompt as-is)
-    const composedTone = language === "hindi"
-      ? `${tone}, in Hindi`
-      : tone;
+    setDelivery(null);
 
     try {
       const res = await generateRetentionMessage({
         customer_segment: segment,
         suggestion:       OFFER_TEXTS[offer] ?? offer,
         tone:             composedTone,
+        channel:          channel.toUpperCase(),
       });
       setMessage(res.message);
       setSource(res.source);
@@ -47,6 +51,38 @@ export default function AIMessages() {
       setError(ae?.message ?? "Generation failed. Is the backend running?");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!message) return;
+    const trimmed = phone.trim();
+    if (!trimmed) { toast.error("Enter a phone number before sending."); return; }
+    if (!/^\+\d{7,15}$/.test(trimmed)) {
+      toast.error("Phone must be in E.164 format, e.g. +919876543210");
+      return;
+    }
+    setSending(true);
+    setDelivery(null);
+    try {
+      const res = await sendRetentionMessage({
+        customer_segment: segment,
+        suggestion:       OFFER_TEXTS[offer] ?? offer,
+        to_number:        trimmed,
+        tone:             composedTone,
+        channel:          channel.toUpperCase(),
+      });
+      setDelivery(res.delivery);
+      if (res.delivery.success) {
+        toast.success(`Sent! Twilio SID: ${res.delivery.sid}`);
+      } else {
+        toast.error(`Send failed: ${res.delivery.error ?? "unknown error"}`);
+      }
+    } catch (e: unknown) {
+      const ae = e as { message?: string };
+      toast.error(ae?.message ?? "Send failed. Check Twilio credentials.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -94,6 +130,17 @@ export default function AIMessages() {
             </div>
           ))}
 
+          {/* Phone number for WhatsApp dispatch */}
+          <div>
+            <Label className="text-xs text-muted-foreground">WhatsApp Number (E.164)</Label>
+            <Input
+              className="mt-1 font-mono text-sm"
+              placeholder="+919876543210"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+            />
+          </div>
+
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <Button className="w-full" onClick={handleGenerate} disabled={loading}>
@@ -128,7 +175,38 @@ export default function AIMessages() {
                 <Button variant="outline" size="sm" onClick={handleGenerate} disabled={loading}>
                   🔄 Regenerate
                 </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSend}
+                  disabled={sending || !phone.trim()}
+                >
+                  {sending ? "📤 Sending…" : "📱 Send via WhatsApp"}
+                </Button>
               </div>
+
+              {/* Delivery status badge */}
+              {delivery && (
+                <div className={`text-xs rounded-md px-3 py-2 ${
+                  delivery.success
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}>
+                  {delivery.success ? (
+                    <>
+                      <span className="font-semibold">✓ Delivered</span>
+                      {" — "}
+                      <span className="font-mono">{delivery.sid}</span>
+                      {" "}
+                      <span className="opacity-70">({delivery.status})</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-semibold">✗ Failed</span>
+                      {" — "}{delivery.error}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-card rounded-lg p-12 card-shadow flex items-center justify-center">

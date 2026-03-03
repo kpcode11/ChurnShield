@@ -18,6 +18,8 @@ export default defineConfig(({ mode }) => ({
         target: "http://localhost:8000",
         changeOrigin: true,
         secure: false,
+        // Strip the /api prefix before forwarding to FastAPI (which has no /api root path)
+        rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
   },

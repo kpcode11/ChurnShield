@@ -165,7 +165,8 @@ def predict_bulk(df: pd.DataFrame) -> pd.DataFrame:
     numeric_cols = df_proc.select_dtypes(include=[np.number]).columns
     for col in numeric_cols:
         if df_proc[col].isnull().any():
-            fill = impute.get(col, df_proc[col].median())   # artifact → last resort: column median
+            # Always use training-set median from artifact; fall back to 0 for unknown columns
+            fill = impute.get(col, 0.0)
             df_proc[col] = df_proc[col].fillna(fill)
 
     cat_cols = df_proc.select_dtypes(include=["object"]).columns
