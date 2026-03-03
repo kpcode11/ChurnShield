@@ -1,33 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, Legend,
 } from "recharts";
+import { fetchAnalytics, type AnalyticsData } from "@/lib/api";
 
-const cityData = [
-  { tier: "Tier 1", rate: 12.4 }, { tier: "Tier 2", rate: 18.7 }, { tier: "Tier 3", rate: 22.1 },
-];
-const satData = [
-  { score: "1", rate: 38 }, { score: "2", rate: 27 }, { score: "3", rate: 15 }, { score: "4", rate: 8 }, { score: "5", rate: 4 },
-];
-const genderData = [
-  { gender: "Male", rate: 16.2 }, { gender: "Female", rate: 14.8 },
-];
-const engagementData = [
-  { month: "Jan", churned: 42, stayed: 12 }, { month: "Feb", churned: 45, stayed: 11 },
-  { month: "Mar", churned: 38, stayed: 14 }, { month: "Apr", churned: 50, stayed: 10 },
-  { month: "May", churned: 44, stayed: 13 }, { month: "Jun", churned: 47, stayed: 9 },
-];
-const tenureData = [
-  { range: "0-6", count: 820 }, { range: "6-12", count: 640 }, { range: "12-24", count: 510 },
-  { range: "24-36", count: 280 }, { range: "36-48", count: 150 }, { range: "48+", count: 90 },
-];
+// Feature correlations are pre-calculated from training data — no backend endpoint
 const corrData = [
   { feature: "DaysSinceOrder", churn: 0.82, satisfaction: -0.65, tenure: -0.42, cashback: -0.31 },
-  { feature: "Satisfaction", churn: -0.71, satisfaction: 1, tenure: 0.35, cashback: 0.28 },
-  { feature: "Tenure", churn: -0.45, satisfaction: 0.35, tenure: 1, cashback: 0.52 },
-  { feature: "Cashback", churn: -0.33, satisfaction: 0.28, tenure: 0.52, cashback: 1 },
+  { feature: "Satisfaction",   churn: -0.71, satisfaction: 1,    tenure: 0.35,  cashback: 0.28 },
+  { feature: "Tenure",         churn: -0.45, satisfaction: 0.35, tenure: 1,     cashback: 0.52 },
+  { feature: "Cashback",       churn: -0.33, satisfaction: 0.28, tenure: 0.52,  cashback: 1 },
 ];
 
 function HeatCell({ val }: { val: number }) {
@@ -44,13 +27,80 @@ function HeatCell({ val }: { val: number }) {
 
 export default function Analytics() {
   const [cityFilter, setCityFilter] = useState("all");
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchAnalytics(ctrl.signal)
+      .then(setData)
+      .catch(e => { if (e?.name !== "AbortError") setError("Failed to load analytics data."); })
+      .finally(() => setLoading(false));
+    return () => ctrl.abort();
+  }, []);
+
+  // Transform API response → chart-friendly arrays
+  const rawCityData = data
+    ? Object.entries(data.churn_by_city_tier)
+        .map(([k, v]) => ({ tier: `Tier ${k}`, rate: v, _key: k }))
+        .sort((a, b) => a._key.localeCompare(b._key))
+    : [];
+
+  const cityData = cityFilter === "all"
+    ? rawCityData
+    : rawCityData.filter(d => d._key === cityFilter);
+
+  const satData = data
+    ? Object.entries(data.churn_by_satisfaction)
+        .map(([k, v]) => ({ score: k, rate: v }))
+        .sort((a, b) => Number(a.score) - Number(b.score))
+    : [];
+
+  const genderData = data
+    ? Object.entries(data.churn_by_gender).map(([k, v]) => ({ gender: k, rate: v }))
+    : [];
+
+  const avgDaysData = data
+    ? [
+        { label: "Churned", days: data.avg_days_since_last_order.churned },
+        { label: "Stayed",  days: data.avg_days_since_last_order.stayed },
+      ]
+    : [];
+
+  const tenureData = data
+    ? Object.entries(data.churn_by_tenure).map(([range, rate]) => ({ range, rate }))
+    : [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground text-sm animate-pulse">Loading analytics…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive text-sm">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-4 justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analytics Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Deep analysis of your customer base</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Deep analysis of your customer base
+            {data && (
+              <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded font-medium">
+                {data.total_customers.toLocaleString()} customers · {data.overall_churn_rate}% overall churn
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <Select value={cityFilter} onValueChange={setCityFilter}>
@@ -74,7 +124,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
               <XAxis dataKey="tier" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn Rate"]} />
               <Bar dataKey="rate" fill="hsl(209,53%,23%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -82,13 +132,13 @@ export default function Analytics() {
 
         {/* Satisfaction */}
         <div className="bg-card rounded-lg p-5 card-shadow">
-          <h3 className="text-xs font-semibold text-muted-foreground mb-3">Churn Rate by Satisfaction</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3">Churn Rate by Satisfaction Score</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={satData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
               <XAxis dataKey="score" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn Rate"]} />
               <Bar dataKey="rate" fill="hsl(38,92%,50%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -102,7 +152,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
               <XAxis dataKey="gender" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn Rate"]} />
               <Bar dataKey="rate" fill="hsl(160,84%,39%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -110,37 +160,40 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Engagement */}
+        {/* Avg Days Since Last Order: Churned vs Stayed */}
         <div className="bg-card rounded-lg p-5 card-shadow">
-          <h3 className="text-xs font-semibold text-muted-foreground mb-3">Avg Days Since Order</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3">Avg Days Since Last Order</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={engagementData}>
+            <BarChart data={avgDaysData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="churned" stroke="hsl(0,72%,51%)" strokeWidth={2} name="Churned" />
-              <Line type="monotone" dataKey="stayed" stroke="hsl(160,84%,39%)" strokeWidth={2} name="Stayed" />
-            </LineChart>
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} unit=" d" />
+              <Tooltip formatter={(v: number) => [`${v} days`]} />
+              <Bar dataKey="days" fill="hsl(0,72%,51%)" radius={[4, 4, 0, 0]} name="Avg Days" />
+            </BarChart>
           </ResponsiveContainer>
+          {data && (
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Churned customers wait {(data.avg_days_since_last_order.churned - data.avg_days_since_last_order.stayed).toFixed(1)} more days on average
+            </p>
+          )}
         </div>
 
-        {/* Tenure Distribution */}
+        {/* Churn Rate by Tenure Band */}
         <div className="bg-card rounded-lg p-5 card-shadow">
-          <h3 className="text-xs font-semibold text-muted-foreground mb-3">Tenure Distribution (Churned)</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3">Churn Rate by Tenure (months)</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={tenureData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
-              <XAxis dataKey="range" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="count" fill="hsl(0,72%,51%)" radius={[4, 4, 0, 0]} />
+              <XAxis dataKey="range" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 11 }} unit="%" />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn Rate"]} />
+              <Bar dataKey="rate" fill="hsl(0,72%,51%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Correlation Heatmap */}
+        {/* Feature Correlation Heatmap (pre-calculated — no backend endpoint) */}
         <div className="bg-card rounded-lg p-5 card-shadow">
           <h3 className="text-xs font-semibold text-muted-foreground mb-3">Feature Correlation</h3>
           <div className="overflow-x-auto">
@@ -166,9 +219,11 @@ export default function Analytics() {
                 ))}
               </tbody>
             </table>
+            <p className="text-xs text-muted-foreground mt-2 text-center italic">Pre-calculated from training data</p>
           </div>
         </div>
       </div>
     </div>
   );
 }
+

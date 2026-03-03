@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { KpiCard } from "@/components/KpiCard";
 import { RiskBadge } from "@/components/RiskBadge";
 import { Button } from "@/components/ui/button";
 import { Users, UserMinus, AlertTriangle, IndianRupee } from "lucide-react";
+import { fetchAnalytics, type AnalyticsData } from "@/lib/api";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -47,6 +49,26 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const Index = () => {
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchAnalytics(ctrl.signal)
+      .then(setAnalytics)
+      .catch(() => {/* dashboard degrades gracefully if API is unavailable */});
+    return () => ctrl.abort();
+  }, []);
+
+  const totalCustomers = analytics
+    ? analytics.total_customers.toLocaleString()
+    : "—";
+  const totalChurned = analytics
+    ? analytics.churned_customers.toLocaleString()
+    : "—";
+  const churnRate = analytics
+    ? `${analytics.overall_churn_rate}%`
+    : undefined;
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -55,12 +77,12 @@ const Index = () => {
         <p className="text-sm text-muted-foreground mt-1">Here's your business health snapshot for today</p>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — Total Customers and Churned are live from /analytics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <KpiCard title="Total Customers" value="1,02,340" change="2.3%" changeType="down" icon={Users} />
-        <KpiCard title="Churned This Month" value="3,847" change="12%" changeType="up" icon={UserMinus} variant="danger" />
-        <KpiCard title="High Risk Right Now" value="8,210" icon={AlertTriangle} variant="warning" />
-        <KpiCard title="Revenue At Risk" value="₹69.7L" icon={IndianRupee} variant="danger" />
+        <KpiCard title="Total Customers"     value={totalCustomers}  change={churnRate} changeType="down" icon={Users} />
+        <KpiCard title="Total Churned"       value={totalChurned}                                         icon={UserMinus} variant="danger" />
+        <KpiCard title="High Risk Right Now" value="—"               icon={AlertTriangle} variant="warning" />
+        <KpiCard title="Revenue At Risk"     value="—"               icon={IndianRupee}   variant="danger" />
       </div>
 
       {/* Charts */}
