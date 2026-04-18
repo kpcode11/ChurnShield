@@ -66,7 +66,7 @@ def _build_prompt(
         f"- Under 80 words\n"
         f"- Include a warm greeting, the specific offer, and a clear call to action\n"
         f"- Use simple, conversational English suitable for Indian e-commerce customers\n"
-        f"- Add one relevant emoji\n"
+        f"- Keep the message concise and friendly\n"
         f"- Do NOT include placeholders like [name] or [link]; write a ready-to-send message\n\n"
         f"Write only the message text, nothing else."
     )
@@ -143,24 +143,24 @@ def _generate_template(customer_segment: str, suggestion: str) -> str:
         "inactive": (
             "Hi there! We noticed you haven't shopped with us in a while. "
             "We'd love to have you back! {suggestion} "
-            "Shop now and enjoy the savings 🛍️"
+            "Shop now and enjoy the savings"
         ),
         "complaint": (
-            "Hi! We're truly sorry about your recent experience. 🙏 "
+            "Hi! We're truly sorry about your recent experience. "
             "Your satisfaction means everything to us. {suggestion} "
             "Reply here to connect with our team — we'll make it right."
         ),
         "low_satisfaction": (
             "Hello! We value your feedback and want to do better for you. "
-            "{suggestion} 💛 Give us another chance — we promise a better experience!"
+            "{suggestion} Give us another chance — we promise a better experience!"
         ),
         "new_customer": (
-            "Welcome to the family! 🎉 "
+            "Welcome to the family! "
             "We're thrilled to have you on board. {suggestion} "
             "Explore our top picks and make your next order even better!"
         ),
         "default": (
-            "Hi! 😊 We have something special just for you. "
+            "Hi! We have something special just for you. "
             "{suggestion} Don't miss out — this offer is exclusively for you!"
         ),
     }

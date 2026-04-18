@@ -68,16 +68,16 @@ export default function HealthCard() {
           <div className="p-5 border-b space-y-2">
             <h4 className="text-sm font-semibold text-card-foreground">Risk Factors</h4>
             {customer.lastOrder > 30 && (
-              <p className="text-sm text-card-foreground">🔴 Days since last order — <span className="text-destructive font-medium">Critical</span></p>
+              <p className="text-sm text-card-foreground">Days since last order — <span className="text-destructive font-medium">Critical</span></p>
             )}
             {customer.satisfaction <= 2 && (
-              <p className="text-sm text-card-foreground">🟠 Satisfaction score {customer.satisfaction}/5 — <span className="text-accent font-medium">Needs help</span></p>
+              <p className="text-sm text-card-foreground">Satisfaction score {customer.satisfaction}/5 — <span className="text-accent font-medium">Needs help</span></p>
             )}
             {customer.complaint && (
-              <p className="text-sm text-card-foreground">🟡 Complaint filed — <span className="text-warning font-medium">Follow up pending</span></p>
+              <p className="text-sm text-card-foreground">Complaint filed — <span className="text-warning font-medium">Follow up pending</span></p>
             )}
             {customer.risk < 35 && (
-              <p className="text-sm text-success">✅ Customer is healthy — no major risk factors</p>
+              <p className="text-sm text-success">Customer is healthy — no major risk factors</p>
             )}
           </div>
 
@@ -90,7 +90,7 @@ export default function HealthCard() {
                   ? "Engagement email series + personalized recommendations"
                   : "Continue nurturing — send loyalty rewards"}
             </p>
-            <Button variant="outline" size="sm">📥 Download as PDF</Button>
+            <Button variant="outline" size="sm">Download as PDF</Button>
           </div>
         </div>
       ) : query ? (

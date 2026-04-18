@@ -99,11 +99,11 @@ export default function BulkPrediction() {
               <p className="text-sm font-semibold text-card-foreground">{file.name}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(1)} KB · ready to score</p>
             </div>
-            <Button variant="ghost" size="sm" onClick={reset}>✕ Remove</Button>
+            <Button variant="ghost" size="sm" onClick={reset}>Remove</Button>
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
           <Button onClick={handlePredict} className="w-full sm:w-auto">
-            ⚡ Run Churn Prediction
+            Run Churn Prediction
           </Button>
         </div>
       )}
@@ -124,14 +124,13 @@ export default function BulkPrediction() {
       {step === "done" && (
         <div className="space-y-4">
           <div className="bg-card rounded-lg p-8 card-shadow text-center space-y-3">
-            <p className="text-3xl">✅</p>
             <p className="text-base font-semibold text-card-foreground">Predictions complete!</p>
             <p className="text-sm text-muted-foreground">
               Your scored Excel file has been downloaded automatically. It includes churn probability,
               risk level (Low / Medium / High), and a suggested retention action for each customer.
             </p>
             <Button onClick={reset} variant="outline" size="sm" className="mt-2">
-              📂 Score another file
+              Score another file
             </Button>
           </div>
         </div>

@@ -16,7 +16,7 @@ API_URL = "http://localhost:8000"
 
 st.set_page_config(
     page_title="ChurnShield",
-    page_icon="🛡️",
+    page_icon="CS",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -53,26 +53,26 @@ st.markdown("""
 
 # ──────────────────── SIDEBAR ────────────────────
 st.sidebar.image("https://img.icons8.com/fluency/96/shield.png", width=80)
-st.sidebar.title("🛡️ ChurnShield")
+st.sidebar.title("ChurnShield")
 st.sidebar.markdown("**Customer Retention Intelligence**")
 st.sidebar.markdown("---")
 
 module = st.sidebar.radio(
     "Navigate",
     [
-        "🏠 Home",
-        "🔮 Churn Prediction",
-        "📊 Analytics Dashboard",
-        "📁 Bulk CSV Prediction",
-        "💰 Revenue Calculator",
-        "💡 Retention Suggestions",
-        "✉️ AI Message Generator",
+        "Home",
+        "Churn Prediction",
+        "Analytics Dashboard",
+        "Bulk CSV Prediction",
+        "Revenue Calculator",
+        "Retention Suggestions",
+        "AI Message Generator",
     ],
 )
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(
-    "<small>Built with ❤️ using FastAPI + Streamlit + XGBoost</small>",
+    "<small>Built with FastAPI + Streamlit + XGBoost</small>",
     unsafe_allow_html=True,
 )
 
@@ -91,7 +91,7 @@ def api_post(endpoint, data=None, files=None):
         r.raise_for_status()
         return r
     except requests.exceptions.ConnectionError:
-        st.error("⚠️ Cannot connect to backend. Make sure the FastAPI server is running on port 8000.")
+        st.error("Cannot connect to backend. Make sure the FastAPI server is running on port 8000.")
         return None
     except Exception as e:
         st.error(f"API Error: {e}")
@@ -105,7 +105,7 @@ def api_get(endpoint):
         r.raise_for_status()
         return r.json()
     except requests.exceptions.ConnectionError:
-        st.error("⚠️ Cannot connect to backend. Make sure the FastAPI server is running on port 8000.")
+        st.error("Cannot connect to backend. Make sure the FastAPI server is running on port 8000.")
         return None
     except Exception as e:
         st.error(f"API Error: {e}")
@@ -116,8 +116,8 @@ def api_get(endpoint):
 #  MODULE 0: HOME
 # ══════════════════════════════════════════════════
 
-if module == "🏠 Home":
-    st.markdown('<p class="main-header">🛡️ ChurnShield</p>', unsafe_allow_html=True)
+if module == "Home":
+    st.markdown('<p class="main-header">ChurnShield</p>', unsafe_allow_html=True)
     st.markdown(
         '<p class="sub-header">Predict. Prevent. Protect Revenue.</p>',
         unsafe_allow_html=True,
@@ -126,19 +126,19 @@ if module == "🏠 Home":
     col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown("""
-        ### 🔮 Predict
+        ### Predict
         Identify which customers are about to leave
         using ML-powered churn scoring.
         """)
     with col2:
         st.markdown("""
-        ### 🛡️ Prevent
+        ### Prevent
         Get smart retention suggestions and
         AI-generated personalised messages.
         """)
     with col3:
         st.markdown("""
-        ### 💰 Protect
+        ### Protect
         Calculate revenue at risk and the ROI
         of your retention campaigns.
         """)
@@ -146,7 +146,7 @@ if module == "🏠 Home":
     st.markdown("---")
 
     # Value proposition
-    st.markdown("### 💡 Why ChurnShield?")
+    st.markdown("### Why ChurnShield?")
     c1, c2 = st.columns(2)
     with c1:
         st.error("**Without ChurnShield**")
@@ -160,18 +160,18 @@ if module == "🏠 Home":
         st.markdown("""
         - Send coupon only to **8,500 at-risk** customers
         - Cost: **₹4,25,000**
-        - **Savings: ₹45.75 Lakhs** 🎉
+        - **Savings: ₹45.75 Lakhs**
         """)
 
     st.markdown("---")
-    st.markdown("### 🧩 6 Integrated Modules")
+    st.markdown("### 6 Integrated Modules")
     modules_info = {
-        "🔮 Churn Prediction Engine": "Enter customer details → instant risk score",
-        "📊 Live Analytics Dashboard": "Visual overview of your entire customer base",
-        "📁 Bulk CSV Prediction": "Upload thousands of customers → scored Excel report",
-        "💰 Revenue Impact Calculator": "Translate predictions into money",
-        "💡 Smart Retention Suggestions": "Targeted retention actions per customer",
-        "✉️ AI Message Generator": "Personalised emails/WhatsApp in seconds",
+        "Churn Prediction Engine": "Enter customer details \u2192 instant risk score",
+        "Live Analytics Dashboard": "Visual overview of your entire customer base",
+        "Bulk CSV Prediction": "Upload thousands of customers \u2192 scored Excel report",
+        "Revenue Impact Calculator": "Translate predictions into money",
+        "Smart Retention Suggestions": "Targeted retention actions per customer",
+        "AI Message Generator": "Personalised emails/WhatsApp in seconds",
     }
     cols = st.columns(3)
     for i, (name, desc) in enumerate(modules_info.items()):
@@ -183,8 +183,8 @@ if module == "🏠 Home":
 #  MODULE 1: SINGLE CUSTOMER PREDICTION
 # ══════════════════════════════════════════════════
 
-elif module == "🔮 Churn Prediction":
-    st.header("🔮 Churn Prediction Engine")
+elif module == "Churn Prediction":
+    st.header("Churn Prediction Engine")
     st.markdown("Enter customer details below to get an instant churn risk score.")
 
     with st.form("predict_form"):
@@ -214,7 +214,7 @@ elif module == "🔮 Churn Prediction":
             days_since = st.number_input("Days Since Last Order", 0.0, 100.0, 5.0)
             cashback = st.number_input("Cashback Amount (₹)", 0.0, 500.0, 150.0)
 
-        submitted = st.form_submit_button("🔍 Predict Churn", use_container_width=True)
+        submitted = st.form_submit_button("Predict Churn", use_container_width=True)
 
     if submitted:
         payload = {
@@ -246,7 +246,6 @@ elif module == "🔮 Churn Prediction":
             c1, c2, c3 = st.columns(3)
             risk = result["risk"]
             risk_class = f"risk-{risk.lower()}"
-            risk_emoji = {"Low": "🟢", "Medium": "🟡", "High": "🔴"}[risk]
 
             with c1:
                 st.metric("Churn Prediction", "Will Churn" if result["churn"] == 1 else "Will Stay")
@@ -254,7 +253,7 @@ elif module == "🔮 Churn Prediction":
                 st.metric("Churn Probability", f"{result['probability'] * 100:.1f}%")
             with c3:
                 st.markdown(f"**Risk Level**")
-                st.markdown(f'<p class="{risk_class}">{risk_emoji} {risk} Risk</p>', unsafe_allow_html=True)
+                st.markdown(f'<p class="{risk_class}">{risk} Risk</p>', unsafe_allow_html=True)
 
             # Show gauge chart
             fig = go.Figure(go.Indicator(
@@ -279,8 +278,8 @@ elif module == "🔮 Churn Prediction":
 #  MODULE 3: ANALYTICS DASHBOARD
 # ══════════════════════════════════════════════════
 
-elif module == "📊 Analytics Dashboard":
-    st.header("📊 Live Analytics Dashboard")
+elif module == "Analytics Dashboard":
+    st.header("Live Analytics Dashboard")
     st.markdown("Visual overview of your entire customer base.")
 
     data = api_get("/analytics")
@@ -376,7 +375,7 @@ elif module == "📊 Analytics Dashboard":
             st.plotly_chart(fig, use_container_width=True)
 
         # Churned vs Stayed comparison
-        st.markdown("### 📈 Days Since Last Order: Churned vs Stayed")
+        st.markdown("### Days Since Last Order: Churned vs Stayed")
         days_data = data["avg_days_since_last_order"]
         fig = px.bar(
             x=["Churned", "Stayed"],
@@ -393,8 +392,8 @@ elif module == "📊 Analytics Dashboard":
 #  MODULE 2: BULK CSV PREDICTION
 # ══════════════════════════════════════════════════
 
-elif module == "📁 Bulk CSV Prediction":
-    st.header("📁 Bulk CSV Prediction")
+elif module == "Bulk CSV Prediction":
+    st.header("Bulk CSV Prediction")
     st.markdown("Upload a CSV with customer data and download a scored Excel report.")
 
     st.info("**Required columns:** Tenure, CityTier, SatisfactionScore, DaySinceLastOrder, Complain, CashbackAmount, Gender, PreferredLoginDevice, etc.")
@@ -406,13 +405,13 @@ elif module == "📁 Bulk CSV Prediction":
         st.markdown(f"**Uploaded:** {len(df_preview)} rows × {len(df_preview.columns)} columns")
         st.dataframe(df_preview.head(10), use_container_width=True)
 
-        if st.button("🚀 Run Bulk Prediction", use_container_width=True):
+        if st.button("Run Bulk Prediction", use_container_width=True):
             with st.spinner("Running predictions on all customers..."):
                 uploaded.seek(0)
                 resp = api_post("/bulk", files={"file": ("data.csv", uploaded.getvalue(), "text/csv")})
 
             if resp and resp.status_code == 200:
-                st.success("✅ Predictions complete!")
+                st.success("Predictions complete!")
 
                 # Read the response Excel
                 result_df = pd.read_excel(io.BytesIO(resp.content), engine="openpyxl")
@@ -422,9 +421,9 @@ elif module == "📁 Bulk CSV Prediction":
                 high = len(result_df[result_df["Risk_Level"] == "High"])
                 med = len(result_df[result_df["Risk_Level"] == "Medium"])
                 low = len(result_df[result_df["Risk_Level"] == "Low"])
-                c1.metric("🔴 High Risk", high)
-                c2.metric("🟡 Medium Risk", med)
-                c3.metric("🟢 Low Risk", low)
+                c1.metric("High Risk", high)
+                c2.metric("Medium Risk", med)
+                c3.metric("Low Risk", low)
 
                 # Show table
                 st.dataframe(result_df, use_container_width=True)
@@ -440,7 +439,7 @@ elif module == "📁 Bulk CSV Prediction":
 
                 # Download button
                 st.download_button(
-                    label="📥 Download Excel Report",
+                    label="Download Excel Report",
                     data=resp.content,
                     file_name="churnshield_results.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -452,8 +451,8 @@ elif module == "📁 Bulk CSV Prediction":
 #  MODULE 4: REVENUE CALCULATOR
 # ══════════════════════════════════════════════════
 
-elif module == "💰 Revenue Calculator":
-    st.header("💰 Revenue Impact Calculator")
+elif module == "Revenue Calculator":
+    st.header("Revenue Impact Calculator")
     st.markdown("See exactly how much revenue is at risk and calculate your campaign ROI.")
 
     with st.form("revenue_form"):
@@ -465,7 +464,7 @@ elif module == "💰 Revenue Calculator":
             coupon = st.number_input("Coupon Amount (₹)", 0.0, 10000.0, 50.0)
             retention = st.slider("Expected Retention Rate (%)", 1, 100, 30)
 
-        calc = st.form_submit_button("📊 Calculate Impact", use_container_width=True)
+        calc = st.form_submit_button("Calculate Impact", use_container_width=True)
 
     if calc:
         resp = api_post("/revenue", {
@@ -477,13 +476,13 @@ elif module == "💰 Revenue Calculator":
         if resp:
             result = resp.json()
             st.markdown("---")
-            st.subheader("📈 Revenue Impact Report")
+            st.subheader("Revenue Impact Report")
 
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("💸 Revenue at Risk", f"₹{result['revenue_at_risk']:,.0f}")
-            c2.metric("📤 Campaign Cost", f"₹{result['campaign_cost']:,.0f}")
-            c3.metric("💰 Revenue Saved", f"₹{result['revenue_saved']:,.0f}")
-            c4.metric("🎯 Net ROI", f"₹{result['net_roi']:,.0f}")
+            c1.metric("Revenue at Risk", f"₹{result['revenue_at_risk']:,.0f}")
+            c2.metric("Campaign Cost", f"₹{result['campaign_cost']:,.0f}")
+            c3.metric("Revenue Saved", f"₹{result['revenue_saved']:,.0f}")
+            c4.metric("Net ROI", f"₹{result['net_roi']:,.0f}")
 
             st.markdown("---")
 
@@ -517,8 +516,8 @@ elif module == "💰 Revenue Calculator":
 #  MODULE 5: RETENTION SUGGESTIONS
 # ══════════════════════════════════════════════════
 
-elif module == "💡 Retention Suggestions":
-    st.header("💡 Smart Retention Suggestions")
+elif module == "Retention Suggestions":
+    st.header("Smart Retention Suggestions")
     st.markdown("Enter customer details to get a targeted retention recommendation.")
 
     with st.form("suggest_form"):
@@ -531,7 +530,7 @@ elif module == "💡 Retention Suggestions":
             cashback = st.number_input("Cashback Amount (₹)", 0.0, 500.0, 150.0)
             tenure = st.number_input("Tenure (months)", 0.0, 100.0, 12.0)
 
-        suggest = st.form_submit_button("💡 Get Suggestion", use_container_width=True)
+        suggest = st.form_submit_button("Get Suggestion", use_container_width=True)
 
     if suggest:
         resp = api_post("/suggest", {
@@ -545,19 +544,17 @@ elif module == "💡 Retention Suggestions":
             result = resp.json()
             st.markdown("---")
 
-            st.warning(f"**🔍 Identified Risk Factor:** {result['reason']}")
-            st.success(f"**💡 Recommendation:** {result['suggestion']}")
-            action_icons = {"email": "✉️", "call": "📞", "coupon": "🎟️"}
-            icon = action_icons.get(result["action_type"], "📋")
-            st.info(f"**{icon} Action Type:** {result['action_type'].upper()}")
+            st.warning(f"**Identified Risk Factor:** {result['reason']}")
+            st.success(f"**Recommendation:** {result['suggestion']}")
+            st.info(f"**Action Type:** {result['action_type'].upper()}")
 
 
 # ══════════════════════════════════════════════════
 #  MODULE 6: AI MESSAGE GENERATOR
 # ══════════════════════════════════════════════════
 
-elif module == "✉️ AI Message Generator":
-    st.header("✉️ AI Message Generator")
+elif module == "AI Message Generator":
+    st.header("AI Message Generator")
     st.markdown("Generate personalised retention messages for at-risk customer segments.")
 
     with st.form("message_form"):
@@ -580,7 +577,7 @@ elif module == "✉️ AI Message Generator":
             "urgent, persuasive",
         ])
 
-        generate = st.form_submit_button("✨ Generate Message", use_container_width=True)
+        generate = st.form_submit_button("Generate Message", use_container_width=True)
 
     if generate:
         with st.spinner("Generating message..."):
@@ -592,7 +589,7 @@ elif module == "✉️ AI Message Generator":
         if resp:
             result = resp.json()
             st.markdown("---")
-            source_label = "🤖 AI Generated (Claude)" if result["source"] == "ai" else "📝 Template Based"
+            source_label = "AI Generated (Claude)" if result["source"] == "ai" else "Template Based"
             st.caption(source_label)
             st.markdown(f"""
             <div style="background: #F0F9FF; border-left: 4px solid #667eea;

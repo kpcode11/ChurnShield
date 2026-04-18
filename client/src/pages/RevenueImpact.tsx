@@ -79,7 +79,7 @@ export default function RevenueImpact() {
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <Button className="w-full" onClick={handleCalculate} disabled={loading}>
-            {loading ? "⏳ Calculating…" : "📊 Calculate Revenue Impact"}
+            {loading ? "Calculating…" : "Calculate Revenue Impact"}
           </Button>
         </div>
 
@@ -104,7 +104,7 @@ export default function RevenueImpact() {
                 <div className="border-t mt-4 pt-4 text-center">
                   <p className="text-xs text-muted-foreground">Net ROI</p>
                   <p className={`text-3xl font-bold mt-1 ${result.net_roi > 0 ? "text-success" : "text-destructive"}`}>
-                    {fmt(result.net_roi)} {result.net_roi > 0 ? "✅" : "❌"}
+                    {fmt(result.net_roi)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
                     ROI Multiplier: {roiMultiplier}x · {result.roi_percentage}% return on campaign spend

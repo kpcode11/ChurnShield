@@ -79,14 +79,14 @@ export default function PredictCustomer() {
   };
 
   // Derive human-readable risk factors from form values
-  const riskFactors: { icon: string; text: string }[] = [];
+  const riskFactors: { text: string }[] = [];
   if (result) {
-    if (parseFloat(daysSince) > 30)   riskFactors.push({ icon: "🔴", text: `${daysSince} days since last order — critical` });
-    if (satisfaction[0] <= 2)          riskFactors.push({ icon: "🟠", text: `Satisfaction score: ${satisfaction[0]}/5 — needs attention` });
-    if (complaint)                     riskFactors.push({ icon: "🟡", text: "Complaint filed — follow up needed" });
-    if (tenure[0] < 6)                 riskFactors.push({ icon: "🟡", text: `New customer (${tenure[0]} months) — higher churn risk` });
-    if (parseFloat(cashback) < 50)     riskFactors.push({ icon: "🟡", text: `Low cashback (₹${cashback}) — not incentivised` });
-    if (riskFactors.length === 0)      riskFactors.push({ icon: "✅", text: "No major churn signals detected" });
+    if (parseFloat(daysSince) > 30)   riskFactors.push({ text: `${daysSince} days since last order — critical` });
+    if (satisfaction[0] <= 2)          riskFactors.push({ text: `Satisfaction score: ${satisfaction[0]}/5 — needs attention` });
+    if (complaint)                     riskFactors.push({ text: "Complaint filed — follow up needed" });
+    if (tenure[0] < 6)                 riskFactors.push({ text: `New customer (${tenure[0]} months) — higher churn risk` });
+    if (parseFloat(cashback) < 50)     riskFactors.push({ text: `Low cashback (₹${cashback}) — not incentivised` });
+    if (riskFactors.length === 0)      riskFactors.push({ text: "No major churn signals detected" });
   }
 
   const riskPct = result ? Math.round(result.probability_pct) : 0;
@@ -149,7 +149,7 @@ export default function PredictCustomer() {
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <Button className="w-full" onClick={handlePredict} disabled={loading}>
-            {loading ? "⏳ Predicting…" : "🔍 Predict Churn"}
+            {loading ? "Predicting…" : "Predict Churn"}
           </Button>
         </div>
 
@@ -174,7 +174,6 @@ export default function PredictCustomer() {
                 <div className="space-y-2 text-sm">
                   {riskFactors.map((f, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <span>{f.icon}</span>
                       <span className="text-card-foreground">{f.text}</span>
                     </div>
                   ))}

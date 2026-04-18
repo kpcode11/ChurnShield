@@ -251,7 +251,7 @@ def main():
 
     print(f"\nModel saved    → {MODEL_PATH}")
     print(f"Artifacts saved → {ENCODER_PATH}")
-    print("\n✅ Training complete!")
+    print("\nTraining complete!")
 
 
 if __name__ == "__main__":

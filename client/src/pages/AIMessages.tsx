@@ -144,7 +144,7 @@ export default function AIMessages() {
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <Button className="w-full" onClick={handleGenerate} disabled={loading}>
-            {loading ? "⏳ Generating…" : "✨ Generate Message"}
+            {loading ? "Generating…" : "Generate Message"}
           </Button>
         </div>
 
@@ -157,7 +157,7 @@ export default function AIMessages() {
                   <span className="text-xs text-muted-foreground uppercase tracking-wide">{channel}</span>
                   {source && (
                     <span className={`text-xs px-2 py-0.5 rounded font-medium ${source === "ai" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                      {source === "ai" ? "✦ AI generated" : "Template"}
+                      {source === "ai" ? "AI generated" : "Template"}
                     </span>
                   )}
                 </div>
@@ -170,17 +170,17 @@ export default function AIMessages() {
                   variant="outline" size="sm"
                   onClick={() => { navigator.clipboard.writeText(message); toast.success("Copied!"); }}
                 >
-                  📋 Copy
+                  Copy
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleGenerate} disabled={loading}>
-                  🔄 Regenerate
+                  Regenerate
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleSend}
                   disabled={sending || !phone.trim()}
                 >
-                  {sending ? "📤 Sending…" : "📱 Send via WhatsApp"}
+                  {sending ? "Sending…" : "Send via WhatsApp"}
                 </Button>
               </div>
 
@@ -193,7 +193,7 @@ export default function AIMessages() {
                 }`}>
                   {delivery.success ? (
                     <>
-                      <span className="font-semibold">✓ Delivered</span>
+                      <span className="font-semibold">Delivered</span>
                       {" — "}
                       <span className="font-mono">{delivery.sid}</span>
                       {" "}
@@ -201,7 +201,7 @@ export default function AIMessages() {
                     </>
                   ) : (
                     <>
-                      <span className="font-semibold">✗ Failed</span>
+                      <span className="font-semibold">Failed</span>
                       {" — "}{delivery.error}
                     </>
                   )}
