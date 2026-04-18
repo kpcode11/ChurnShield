@@ -1,9 +1,9 @@
-pandas==2.2.2
-numpy==1.26.4
-scikit-learn==1.5.1
-xgboost==2.1.1
+pandas==2.3.3
+numpy==2.2.3
+scikit-learn==1.8.0
+xgboost==3.2.0
 joblib==1.4.2
-fastapi==0.115.0
+fastapi==0.129.0
 uvicorn==0.30.6
 python-multipart==0.0.9
 openpyxl==3.1.5
@@ -12,3 +12,4 @@ requests==2.32.3
 plotly==5.24.0
 anthropic==0.34.1
 kagglehub==0.3.4
+twilio>=9.0.0

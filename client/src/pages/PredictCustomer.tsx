@@ -6,19 +6,91 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { predictCustomer, getSuggestion, type PredictResponse, type SuggestResponse } from "@/lib/api";
+
+const riskColors: Record<string, string> = {
+  High:   "border-l-destructive",
+  Medium: "border-l-accent",
+  Low:    "border-l-success",
+};
+const riskTextColors: Record<string, string> = {
+  High:   "text-destructive",
+  Medium: "text-accent",
+  Low:    "text-success",
+};
+const progressColors: Record<string, string> = {
+  High:   "[&>div]:bg-destructive",
+  Medium: "[&>div]:bg-accent",
+  Low:    "[&>div]:bg-success",
+};
 
 export default function PredictCustomer() {
-  const [predicted, setPredicted] = useState(false);
-  const [tenure, setTenure] = useState([12]);
-  const [satisfaction, setSatisfaction] = useState([3]);
-  const [daysSince, setDaysSince] = useState("15");
-  const [cityTier, setCityTier] = useState("1");
-  const [devices, setDevices] = useState([2]);
-  const [complaint, setComplaint] = useState(false);
-  const [cashback, setCashback] = useState("120");
-  const [addresses, setAddresses] = useState([2]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState<string | null>(null);
+  const [result, setResult] = useState<PredictResponse | null>(null);
+  const [suggestion, setSuggestion] = useState<SuggestResponse | null>(null);
 
-  const riskScore = 78;
+  // Form state
+  const [tenure, setTenure]           = useState([12]);
+  const [satisfaction, setSatisfaction] = useState([3]);
+  const [daysSince, setDaysSince]     = useState("15");
+  const [cityTier, setCityTier]       = useState("1");
+  const [devices, setDevices]         = useState([2]);
+  const [complaint, setComplaint]     = useState(false);
+  const [cashback, setCashback]       = useState("120");
+  const [addresses, setAddresses]     = useState([2]);
+
+  const handlePredict = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setSuggestion(null);
+
+    const payload = {
+      Tenure:                    tenure[0],
+      SatisfactionScore:         satisfaction[0],
+      DaySinceLastOrder:         parseFloat(daysSince) || 0,
+      CityTier:                  parseInt(cityTier),
+      NumberOfDeviceRegistered:  devices[0],
+      Complain:                  complaint ? 1 : 0,
+      CashbackAmount:            parseFloat(cashback) || 0,
+      NumberOfAddress:           addresses[0],
+    };
+
+    try {
+      const [pred, sug] = await Promise.all([
+        predictCustomer(payload),
+        getSuggestion({
+          Tenure:            payload.Tenure,
+          SatisfactionScore: payload.SatisfactionScore,
+          DaySinceLastOrder: payload.DaySinceLastOrder,
+          CashbackAmount:    payload.CashbackAmount,
+          Complain:          payload.Complain,
+        }),
+      ]);
+      setResult(pred);
+      setSuggestion(sug);
+    } catch (e: unknown) {
+      const ae = e as { message?: string };
+      setError(ae?.message ?? "Prediction failed. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Derive human-readable risk factors from form values
+  const riskFactors: { text: string }[] = [];
+  if (result) {
+    if (parseFloat(daysSince) > 30)   riskFactors.push({ text: `${daysSince} days since last order — critical` });
+    if (satisfaction[0] <= 2)          riskFactors.push({ text: `Satisfaction score: ${satisfaction[0]}/5 — needs attention` });
+    if (complaint)                     riskFactors.push({ text: "Complaint filed — follow up needed" });
+    if (tenure[0] < 6)                 riskFactors.push({ text: `New customer (${tenure[0]} months) — higher churn risk` });
+    if (parseFloat(cashback) < 50)     riskFactors.push({ text: `Low cashback (₹${cashback}) — not incentivised` });
+    if (riskFactors.length === 0)      riskFactors.push({ text: "No major churn signals detected" });
+  }
+
+  const riskPct = result ? Math.round(result.probability_pct) : 0;
+  const riskLevel = result?.risk ?? "Low";
 
   return (
     <div className="space-y-6">
@@ -74,54 +146,54 @@ export default function PredictCustomer() {
             </div>
           </div>
 
-          <Button className="w-full" onClick={() => setPredicted(true)}>
-            🔍 Predict Churn
+          {error && <p className="text-xs text-destructive">{error}</p>}
+
+          <Button className="w-full" onClick={handlePredict} disabled={loading}>
+            {loading ? "Predicting…" : "Predict Churn"}
           </Button>
         </div>
 
         {/* Results Panel */}
         <div className="space-y-4">
-          {predicted ? (
+          {result ? (
             <>
-              <div className="bg-card rounded-lg p-6 card-shadow border-l-4 border-l-destructive">
-                <p className="text-xs font-semibold text-destructive uppercase tracking-wide">Churn Risk: High</p>
-                <p className="text-4xl font-bold text-card-foreground mt-2">{riskScore}%</p>
-                <Progress value={riskScore} className="mt-3 h-3 [&>div]:bg-destructive" />
+              <div className={`bg-card rounded-lg p-6 card-shadow border-l-4 ${riskColors[riskLevel]}`}>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${riskTextColors[riskLevel]}`}>
+                  Churn Risk: {riskLevel}
+                </p>
+                <p className="text-4xl font-bold text-card-foreground mt-2">{riskPct}%</p>
+                <Progress value={riskPct} className={`mt-3 h-3 ${progressColors[riskLevel]}`} />
                 <p className="text-sm text-muted-foreground mt-3">
-                  This customer is very likely to leave within 2–3 weeks.
+                  Model confidence: {result.probability_pct.toFixed(1)}% probability of churn
+                  {result.churn === 1 ? " — customer predicted to churn." : " — customer predicted to stay."}
                 </p>
               </div>
 
               <div className="bg-card rounded-lg p-6 card-shadow space-y-3">
                 <h4 className="text-sm font-semibold text-card-foreground">Why is this customer at risk?</h4>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive">🔴</span>
-                    <span className="text-card-foreground"><strong>47 days since last order</strong> — most critical</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-accent">🟠</span>
-                    <span className="text-card-foreground"><strong>Satisfaction score: 2/5</strong> — needs attention</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-warning">🟡</span>
-                    <span className="text-card-foreground"><strong>Filed a complaint recently</strong> — follow up needed</span>
-                  </div>
+                  {riskFactors.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="text-card-foreground">{f.text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg p-6 card-shadow">
-                <h4 className="text-sm font-semibold text-card-foreground">Recommended Action</h4>
-                <p className="text-sm text-muted-foreground mt-2">→ Priority support call + ₹150 loyalty coupon</p>
-                <div className="flex gap-2 mt-4">
-                  <Button variant="outline" size="sm">📄 Generate Health Card</Button>
-                  <Button variant="outline" size="sm">📧 Generate Message</Button>
+              {suggestion && (
+                <div className="bg-card rounded-lg p-6 card-shadow">
+                  <h4 className="text-sm font-semibold text-card-foreground">Recommended Action</h4>
+                  <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">{suggestion.action_type}</p>
+                  <p className="text-sm text-muted-foreground mt-2">→ {suggestion.suggestion}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1 italic">{suggestion.reason}</p>
                 </div>
-              </div>
+              )}
             </>
           ) : (
             <div className="bg-card rounded-lg p-12 card-shadow flex items-center justify-center">
-              <p className="text-muted-foreground text-sm">Enter customer details and click predict to see results</p>
+              <p className="text-muted-foreground text-sm">
+                {loading ? "Running prediction…" : "Enter customer details and click predict to see results"}
+              </p>
             </div>
           )}
         </div>
@@ -129,3 +201,4 @@ export default function PredictCustomer() {
     </div>
   );
 }
+

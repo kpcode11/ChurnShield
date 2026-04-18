@@ -1,28 +1,65 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { FileUp } from "lucide-react";
+import { bulkPredict } from "@/lib/api";
+
+type Step = "upload" | "ready" | "loading" | "done";
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement("a");
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function BulkPrediction() {
-  const [step, setStep] = useState<"upload" | "preview" | "processing" | "done">("upload");
-  const [progress, setProgress] = useState(0);
+  const [step, setStep]         = useState<Step>("upload");
+  const [file, setFile]         = useState<File | null>(null);
+  const [error, setError]       = useState<string | null>(null);
+  const inputRef                = useRef<HTMLInputElement>(null);
+  const abortRef                = useRef<AbortController | null>(null);
 
-  const handleUpload = () => {
-    setStep("preview");
+  const handleFileSelect = (selected: File | null) => {
+    if (!selected) return;
+    if (!selected.name.endsWith(".csv")) {
+      setError("Only .csv files are supported.");
+      return;
+    }
+    setFile(selected);
+    setError(null);
+    setStep("ready");
   };
 
-  const runPrediction = () => {
-    setStep("processing");
-    let p = 0;
-    const interval = setInterval(() => {
-      p += Math.random() * 15;
-      if (p >= 100) {
-        p = 100;
-        clearInterval(interval);
-        setTimeout(() => setStep("done"), 500);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    handleFileSelect(e.dataTransfer.files[0] ?? null);
+  };
+
+  const handlePredict = async () => {
+    if (!file) return;
+    setStep("loading");
+    setError(null);
+
+    abortRef.current = new AbortController();
+    try {
+      const blob = await bulkPredict(file, abortRef.current.signal);
+      triggerDownload(blob, "churnshield_results.xlsx");
+      setStep("done");
+    } catch (e: unknown) {
+      const ae = e as { message?: string; status?: number };
+      if (ae?.status !== 0) {          // ignore abort
+        setError(ae?.message ?? "Upload failed. Is the backend running?");
+        setStep("ready");
       }
-      setProgress(Math.min(p, 100));
-    }, 300);
+    }
+  };
+
+  const reset = () => {
+    setFile(null);
+    setStep("upload");
+    setError(null);
   };
 
   return (
@@ -32,9 +69,20 @@ export default function BulkPrediction() {
         <p className="text-sm text-muted-foreground mt-1">Upload thousands of customers and get scored predictions</p>
       </div>
 
+      {/* Hidden real file input */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv"
+        className="hidden"
+        onChange={e => handleFileSelect(e.target.files?.[0] ?? null)}
+      />
+
       {step === "upload" && (
         <div
-          onClick={handleUpload}
+          onDrop={handleDrop}
+          onDragOver={e => e.preventDefault()}
+          onClick={() => inputRef.current?.click()}
           className="bg-card rounded-lg card-shadow border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer p-16 flex flex-col items-center justify-center text-center"
         >
           <FileUp className="h-12 w-12 text-muted-foreground mb-4" />
@@ -44,71 +92,50 @@ export default function BulkPrediction() {
         </div>
       )}
 
-      {step === "preview" && (
+      {step === "ready" && file && (
         <div className="space-y-4">
-          <div className="bg-card rounded-lg card-shadow overflow-hidden">
-            <div className="p-4 border-b">
-              <h3 className="text-sm font-semibold text-card-foreground">Preview — customer_data.csv</h3>
+          <div className="bg-card rounded-lg card-shadow p-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-card-foreground">{file.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(1)} KB · ready to score</p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    {["CustomerID", "Tenure", "Satisfaction", "DaysSinceOrder", "CityTier", "Cashback"].map(h => (
-                      <th key={h} className="text-left p-3 font-medium text-muted-foreground">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["#1001", "14", "2", "47", "1", "₹95"],
-                    ["#1002", "28", "4", "12", "2", "₹210"],
-                    ["#1003", "6", "1", "55", "3", "₹50"],
-                    ["#1004", "35", "5", "3", "1", "₹340"],
-                    ["#1005", "9", "3", "31", "2", "₹120"],
-                  ].map((row, i) => (
-                    <tr key={i} className="border-b last:border-0">
-                      {row.map((cell, j) => (
-                        <td key={j} className="p-3 text-card-foreground">{cell}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Button variant="ghost" size="sm" onClick={reset}>Remove</Button>
           </div>
-          <Button onClick={runPrediction} className="w-full sm:w-auto">
-            ⚡ Run Churn Prediction on 12,450 customers
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <Button onClick={handlePredict} className="w-full sm:w-auto">
+            Run Churn Prediction
           </Button>
         </div>
       )}
 
-      {step === "processing" && (
-        <div className="bg-card rounded-lg p-8 card-shadow text-center space-y-4">
-          <p className="text-sm font-medium text-card-foreground">Processing...</p>
-          <Progress value={progress} className="h-3" />
-          <p className="text-xs text-muted-foreground">{Math.round(progress * 124.5)} / 12,450 customers</p>
+      {step === "loading" && (
+        <div className="bg-card rounded-lg p-10 card-shadow text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          </div>
+          <p className="text-sm font-medium text-card-foreground">Scoring customers…</p>
+          <p className="text-xs text-muted-foreground">The backend is running predictions. This may take a moment.</p>
+          <Button variant="ghost" size="sm" onClick={() => { abortRef.current?.abort(); reset(); }}>
+            Cancel
+          </Button>
         </div>
       )}
 
       {step === "done" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { label: "🟢 Low", count: "6,230", pct: "50.1%", color: "border-l-success" },
-              { label: "🟡 Medium", count: "3,890", pct: "31.2%", color: "border-l-accent" },
-              { label: "🔴 High", count: "2,330", pct: "18.7%", color: "border-l-destructive" },
-            ].map(s => (
-              <div key={s.label} className={`bg-card rounded-lg p-5 card-shadow border-l-4 ${s.color} text-center`}>
-                <p className="text-lg font-bold text-card-foreground">{s.label}</p>
-                <p className="text-2xl font-bold text-card-foreground mt-1">{s.count}</p>
-                <p className="text-sm text-muted-foreground">{s.pct}</p>
-              </div>
-            ))}
+          <div className="bg-card rounded-lg p-8 card-shadow text-center space-y-3">
+            <p className="text-base font-semibold text-card-foreground">Predictions complete!</p>
+            <p className="text-sm text-muted-foreground">
+              Your scored Excel file has been downloaded automatically. It includes churn probability,
+              risk level (Low / Medium / High), and a suggested retention action for each customer.
+            </p>
+            <Button onClick={reset} variant="outline" size="sm" className="mt-2">
+              Score another file
+            </Button>
           </div>
-          <Button className="w-full sm:w-auto">⬇️ Download Full Report (.xlsx)</Button>
         </div>
       )}
     </div>
   );
 }
+

@@ -3,11 +3,11 @@ import { RiskBadge } from "@/components/RiskBadge";
 import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const segments = [
-  { name: "Champions", icon: "👑", count: 2340, color: "hsl(209,53%,23%)", strategy: "Reward & upsell" },
-  { name: "Loyal", icon: "⭐", count: 3120, color: "hsl(160,84%,39%)", strategy: "Engage & nurture" },
-  { name: "At Risk", icon: "⚠️", count: 1890, color: "hsl(38,92%,50%)", strategy: "Retention campaign" },
-  { name: "New", icon: "🌱", count: 980, color: "hsl(270,60%,55%)", strategy: "Onboard & educate" },
-  { name: "Lost", icon: "😴", count: 620, color: "hsl(0,72%,51%)", strategy: "Win-back offer" },
+  { name: "Champions", count: 2340, color: "hsl(209,53%,23%)", strategy: "Reward & upsell" },
+  { name: "Loyal", count: 3120, color: "hsl(160,84%,39%)", strategy: "Engage & nurture" },
+  { name: "At Risk", count: 1890, color: "hsl(38,92%,50%)", strategy: "Retention campaign" },
+  { name: "New", count: 980, color: "hsl(270,60%,55%)", strategy: "Onboard & educate" },
+  { name: "Lost", count: 620, color: "hsl(0,72%,51%)", strategy: "Win-back offer" },
 ];
 
 const scatterData: Record<string, Array<{ recency: number; frequency: number; monetary: number }>> = {
@@ -46,7 +46,6 @@ export default function CustomerSegments() {
               selected === s.name ? "ring-2 ring-primary" : ""
             }`}
           >
-            <span className="text-2xl">{s.icon}</span>
             <p className="text-sm font-semibold text-card-foreground mt-2">{s.name}</p>
             <p className="text-xl font-bold text-card-foreground">{s.count.toLocaleString()}</p>
             <p className="text-xs text-muted-foreground">customers</p>
