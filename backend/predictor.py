@@ -10,6 +10,8 @@ Artifact bundle (churn_encoder.pkl) expected keys:
   scale_pos_weight float                    — class imbalance ratio (reference)
 """
 
+from __future__ import annotations
+
 import os
 import numpy as np
 import pandas as pd

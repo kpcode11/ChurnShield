@@ -3,6 +3,8 @@ Layer 3 — FastAPI Backend
 All six endpoints for ChurnShield.
 """
 
+from __future__ import annotations
+
 import os
 import io
 import sys
@@ -15,7 +17,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
@@ -250,7 +252,7 @@ class RevenueImpactInput(BaseModel):
     Provide a list of customers (with individual churn probabilities and revenue
     values) plus campaign parameters to get a complete ROI analysis.
     """
-    customers:                  list[CustomerRevenueRecord]
+    customers:                  List[CustomerRevenueRecord]
     campaign_cost_per_customer: float   # cost of reaching one customer (coupon / call / email)
     retention_rate:             float   # expected % of targeted customers retained, e.g. 30
 

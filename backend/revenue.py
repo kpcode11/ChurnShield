@@ -9,6 +9,8 @@ calculate_customer_revenue_risk(...)   — per-customer at-risk revenue + tier a
 calculate_roi(...)                     — ROI given campaign cost and retention rate
 """
 
+from __future__ import annotations
+
 
 # ──────────────────────────────────────────────────────────────────
 # Risk classification helper
