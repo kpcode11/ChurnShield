@@ -8,6 +8,7 @@ Artifact bundle (churn_encoder.pkl) expected keys:
   impute_values    {col: median | mode}     — training-set fill values (no leakage)
   train_ranges     {col: (min, max)}        — numeric bounds for clipping outliers
   scale_pos_weight float                    — class imbalance ratio (reference)
+  best_threshold   float                    — tuned classification threshold
 """
 
 import os
@@ -116,10 +117,12 @@ def predict_single(data: dict) -> dict:
         "risk":            str,    # "Low" | "Medium" | "High"
       }
     """
-    model, _ = _load_model()
+    model, art = _load_model()
     X         = _encode_input(data)
-    prediction = int(model.predict(X)[0])
     proba      = float(model.predict_proba(X)[0][1])   # P(churn)
+
+    threshold  = art.get("best_threshold", 0.5)
+    prediction = int(proba >= threshold)
 
     if proba < RISK_LOW_THRESHOLD:
         risk = "Low"

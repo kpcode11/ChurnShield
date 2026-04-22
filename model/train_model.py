@@ -10,6 +10,7 @@ Artifacts saved:
       "impute_values": {col: value},          # training medians/modes for NaN fill
       "train_ranges":  {col: (min, max)},     # numeric ranges for input clipping
       "scale_pos_weight": float,              # class imbalance ratio (saved for reference)
+      "best_threshold": float,                # tuned classification threshold
   }
 """
 
@@ -18,11 +19,11 @@ import sys
 import warnings
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score,
-    f1_score, roc_auc_score, classification_report,
+    f1_score, roc_auc_score, classification_report, confusion_matrix
 )
 from xgboost import XGBClassifier
 import joblib
@@ -57,7 +58,15 @@ def load_and_clean(path: str):
     df = pd.read_csv(path)
     print(f"Loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
 
-    # 1. Drop non-predictive columns
+    # 1. Schema Validation & Drop non-predictive columns
+    if TARGET not in df.columns:
+        raise ValueError(f"Target column '{TARGET}' missing from dataset.")
+
+    df = df.dropna(subset=[TARGET])
+    unique_targets = set(df[TARGET].unique())
+    if not unique_targets.issubset({0, 1}):
+        raise ValueError(f"Target column '{TARGET}' must be binary (0 and 1). Found: {unique_targets}")
+
     cols_to_drop = [c for c in DROP_COLS if c in df.columns]
     if cols_to_drop:
         df = df.drop(columns=cols_to_drop)
@@ -126,6 +135,7 @@ def train_model(df: pd.DataFrame):
       impute_values — {col: fill_value} computed from X_train only
       train_ranges  — {col: (min, max)} numeric feature bounds from X_train
       spw           — scale_pos_weight (neg/pos ratio)
+      best_threshold— optimized threshold
     """
     X = df.drop(columns=[TARGET])
     y = df[TARGET]
@@ -159,8 +169,8 @@ def train_model(df: pd.DataFrame):
     spw  = round(neg / pos, 4)
     print(f"Class balance — 0:{neg}  1:{pos}  scale_pos_weight={spw}")
 
-    # ── XGBoost ───────────────────────────────────────────────────
-    model = XGBClassifier(
+    # ── XGBoost Configuration ─────────────────────────────────────
+    xgb_params = dict(
         n_estimators=300,
         max_depth=6,
         learning_rate=0.05,
@@ -170,27 +180,72 @@ def train_model(df: pd.DataFrame):
         gamma=1,
         reg_alpha=0.1,
         reg_lambda=1.0,
-        scale_pos_weight=spw,       # corrects 5:1 imbalance
+        scale_pos_weight=spw,       # corrects imbalance
         random_state=42,
-        eval_metric="logloss",      # deprecated encoder param removed in XGBoost 2.x
+        eval_metric="logloss",
         n_jobs=-1,
     )
+
+    # ── Stratified Cross-Validation ───────────────────────────────
+    print("\n── Stratified Cross-Validation ─────────────────")
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv_acc, cv_prec, cv_rec, cv_f1 = [], [], [], []
+    val_probs = np.zeros(len(X_train))
+
+    for train_idx, val_idx in skf.split(X_train, y_train):
+        X_f_train, y_f_train = X_train.iloc[train_idx], y_train.iloc[train_idx]
+        X_f_val, y_f_val = X_train.iloc[val_idx], y_train.iloc[val_idx]
+
+        f_model = XGBClassifier(**xgb_params)
+        f_model.fit(X_f_train, y_f_train, eval_set=[(X_f_val, y_f_val)], verbose=False)
+
+        y_f_prob = f_model.predict_proba(X_f_val)[:, 1]
+        val_probs[val_idx] = y_f_prob
+        y_f_pred = (y_f_prob >= 0.5).astype(int)
+
+        cv_acc.append(accuracy_score(y_f_val, y_f_pred))
+        cv_prec.append(precision_score(y_f_val, y_f_pred))
+        cv_rec.append(recall_score(y_f_val, y_f_pred))
+        cv_f1.append(f1_score(y_f_val, y_f_pred))
+
+    print(f"  Accuracy  : {np.mean(cv_acc):.4f} ± {np.std(cv_acc):.4f}")
+    print(f"  Precision : {np.mean(cv_prec):.4f} ± {np.std(cv_prec):.4f}")
+    print(f"  Recall    : {np.mean(cv_rec):.4f} ± {np.std(cv_rec):.4f}")
+    print(f"  F1 Score  : {np.mean(cv_f1):.4f} ± {np.std(cv_f1):.4f}")
+
+    # ── Threshold Tuning ──────────────────────────────────────────
+    thresholds = np.linspace(0.1, 0.9, 81)
+    best_f1, best_threshold = 0, 0.5
+    for t in thresholds:
+        preds = (val_probs >= t).astype(int)
+        f1 = f1_score(y_train, preds)
+        if f1 > best_f1:
+            best_f1 = f1
+            best_threshold = float(t)
+    print(f"\n── Threshold Tuning ─────────────────────────────")
+    print(f"  Optimized Threshold : {best_threshold:.4f} (Validation F1: {best_f1:.4f})")
+
+    # ── Final Model Training ──────────────────────────────────────
+    model = XGBClassifier(**xgb_params)
     model.fit(
         X_train, y_train,
         eval_set=[(X_test, y_test)],
         verbose=False,
     )
 
-    # ── Evaluation ────────────────────────────────────────────────
-    y_pred  = model.predict(X_test)
+    # ── Evaluation on Holdout Set ─────────────────────────────────
     y_proba = model.predict_proba(X_test)[:, 1]
+    y_pred = (y_proba >= best_threshold).astype(int)
 
-    print("\n── Evaluation Metrics ──────────────────────────")
+    print("\n── Holdout Evaluation ────────────────────────────")
     print(f"  Accuracy  : {accuracy_score(y_test, y_pred):.4f}")
     print(f"  Precision : {precision_score(y_test, y_pred):.4f}")
     print(f"  Recall    : {recall_score(y_test, y_pred):.4f}")
     print(f"  F1 Score  : {f1_score(y_test, y_pred):.4f}")
     print(f"  ROC-AUC   : {roc_auc_score(y_test, y_proba):.4f}")
+    print("\n── Confusion Matrix ──")
+    cm = confusion_matrix(y_test, y_pred)
+    print(f"TN: {cm[0,0]:<5} FP: {cm[0,1]}\nFN: {cm[1,0]:<5} TP: {cm[1,1]}")
     print("\n── Classification Report ──")
     print(classification_report(y_test, y_pred, target_names=["Stay", "Churn"]))
 
@@ -204,7 +259,7 @@ def train_model(df: pd.DataFrame):
         bar = "█" * int(imp * 200)
         print(f"  {feat:<35} {imp:.4f}  {bar}")
 
-    return model, list(X.columns), impute_values, train_ranges, spw
+    return model, list(X.columns), impute_values, train_ranges, spw, best_threshold
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -233,7 +288,7 @@ def main():
 
     # Step 4: Train
     print("\n── Layer 2: Model Training ──")
-    model, feature_names, impute_values, train_ranges, spw = train_model(df)
+    model, feature_names, impute_values, train_ranges, spw, best_threshold = train_model(df)
 
     # Step 5: Save artifacts
     #   Everything the predictor needs is bundled into churn_encoder.pkl so
@@ -244,6 +299,7 @@ def main():
         "impute_values":    impute_values,  # {col: median | mode} from X_train
         "train_ranges":     train_ranges,   # {col: (min, max)} for clipping
         "scale_pos_weight": spw,            # saved for reference / retraining
+        "best_threshold":   best_threshold, # optimized classification threshold
     }
 
     joblib.dump(model,     MODEL_PATH)
