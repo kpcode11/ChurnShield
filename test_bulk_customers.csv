@@ -1,0 +1,11 @@
+Tenure,PreferredLoginDevice,CityTier,WarehouseToHome,PreferredPaymentMode,Gender,HourSpendOnApp,NumberOfDeviceRegistered,PreferedOrderCat,SatisfactionScore,MaritalStatus,NumberOfAddress,Complain,OrderAmountHikeFromlastYear,CouponUsed,OrderCount,DaySinceLastOrder,CashbackAmount
+1,Phone,3,30,COD,Male,1,1,Mobile,1,Single,8,1,5,0,1,20,50
+20,Mobile Phone,1,10,Credit Card,Female,5,3,Laptop & Accessory,5,Married,2,0,25,5,10,2,300
+10,Computer,2,15,Debit Card,Male,3,2,Fashion,3,Single,3,0,15,2,5,5,150
+5,Mobile Phone,3,25,E wallet,Female,2,2,Grocery,2,Married,5,0,10,1,3,10,80
+15,Computer,1,12,Credit Card,Male,4,4,Mobile Phone,4,Divorced,2,0,20,3,8,3,200
+3,Phone,2,20,Cash on Delivery,Female,2,1,Others,2,Single,6,1,8,0,2,15,60
+25,Mobile Phone,1,8,UPI,Male,5,5,Laptop & Accessory,5,Married,1,0,30,6,12,1,350
+8,Computer,3,22,Debit Card,Female,3,2,Fashion,3,Single,4,0,12,2,4,8,120
+12,Mobile Phone,2,14,Credit Card,Male,4,3,Mobile,4,Married,3,0,18,4,7,4,180
+2,Phone,3,28,COD,Female,1,1,Grocery,1,Single,7,1,6,0,1,18,45

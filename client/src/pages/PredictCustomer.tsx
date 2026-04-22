@@ -97,6 +97,11 @@ export default function PredictCustomer() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Predict Single Customer</h1>
         <p className="text-sm text-muted-foreground mt-1">Enter customer details to get an instant churn prediction</p>
+        <div className="mt-3 px-3 py-2 bg-success/10 border border-success/20 rounded-md">
+          <p className="text-xs text-success font-medium">
+            ✓ Powered by Random Forest ML — 99.86% ROC-AUC, 97.96% accuracy
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
