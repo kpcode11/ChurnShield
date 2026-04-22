@@ -205,6 +205,26 @@ export interface KpiComparison {
   avg_complain_rate:     KpiPair;
 }
 
+export interface FeatureImportance {
+  feature: string;
+  importance: number;
+  importance_pct: number;
+}
+
+export interface ModelPerformance {
+  model_name: string;
+  roc_auc: number;
+  f1_score: number;
+  accuracy: number;
+  precision: number;
+  recall: number;
+  false_positives: number;
+  false_negatives: number;
+  total_test_samples: number;
+  training_time_seconds: number;
+  threshold: number;
+}
+
 export interface AnalyticsData {
   total_customers:          number;
   churned_customers:        number;
@@ -219,6 +239,8 @@ export interface AnalyticsData {
   avg_days_since_last_order: { churned: number; stayed: number };
   churn_by_tenure:          Record<string, number>;
   kpi_comparison:           KpiComparison;
+  feature_importance:       FeatureImportance[];
+  model_performance:        ModelPerformance;
 }
 
 // Matches backend GET /analytics/trends response

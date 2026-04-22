@@ -2,6 +2,7 @@
 Module 3 — Analytics Engine
 
 Pandas aggregation and time-series processing for the Live Analytics Dashboard.
+Enhanced with Random Forest model insights and real feature importance data.
 
 All compute_* functions accept a pre-loaded DataFrame and return plain Python
 dicts / lists that FastAPI can serialise directly to JSON.
@@ -17,7 +18,9 @@ Column reference (ecommerce_churn.csv):
 from __future__ import annotations
 
 import math
+import os
 import pandas as pd
+import joblib
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -149,6 +152,70 @@ def compute_kpi_comparison(df: pd.DataFrame) -> dict:
     }
 
 
+def compute_feature_importance() -> list[dict]:
+    """
+    Load the trained Random Forest model and extract real feature importances.
+    
+    Returns a sorted list of {feature, importance, importance_pct} dicts.
+    Falls back to empty list if model not found.
+    """
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_dir, "..", "model", "churn_model.pkl")
+        encoder_path = os.path.join(base_dir, "..", "model", "churn_encoder.pkl")
+        
+        if not os.path.exists(model_path) or not os.path.exists(encoder_path):
+            return []
+        
+        model = joblib.load(model_path)
+        artifacts = joblib.load(encoder_path)
+        feature_names = artifacts.get("feature_names", [])
+        
+        if not hasattr(model, "feature_importances_"):
+            return []
+        
+        importances = model.feature_importances_
+        total = sum(importances)
+        
+        # Create sorted list of feature importance dicts
+        importance_data = [
+            {
+                "feature": name,
+                "importance": round(float(imp), 4),
+                "importance_pct": round(float(imp / total * 100), 2) if total > 0 else 0.0
+            }
+            for name, imp in zip(feature_names, importances)
+        ]
+        
+        # Sort by importance descending
+        importance_data.sort(key=lambda x: x["importance"], reverse=True)
+        
+        return importance_data
+    
+    except Exception:
+        return []
+
+
+def compute_model_performance() -> dict:
+    """
+    Return the Random Forest model's performance metrics.
+    These are hardcoded from the training results for display purposes.
+    """
+    return {
+        "model_name": "Random Forest",
+        "roc_auc": 0.9986,
+        "f1_score": 0.9421,
+        "accuracy": 0.9796,
+        "precision": 0.9034,
+        "recall": 0.9842,
+        "false_positives": 20,
+        "false_negatives": 3,
+        "total_test_samples": 1126,
+        "training_time_seconds": 1.8,
+        "threshold": 0.32,
+    }
+
+
 # ── Time-series: monthly churn trend ────────────────────────────────────────
 
 def compute_monthly_trend(df: pd.DataFrame, rolling_window: int = 3) -> dict:
@@ -255,7 +322,8 @@ def build_analytics_response(df: pd.DataFrame) -> dict:
 
     Groups included:
       overview + 7 categorical breakdowns + tenure bands +
-      avg_days_since_last_order + kpi_comparison
+      avg_days_since_last_order + kpi_comparison + 
+      feature_importance + model_performance
     """
     return {
         **compute_overview(df),
@@ -266,6 +334,8 @@ def build_analytics_response(df: pd.DataFrame) -> dict:
             "stayed":  _safe_mean(df[df["Churn"] == 0]["DaySinceLastOrder"]),
         },
         "kpi_comparison": compute_kpi_comparison(df),
+        "feature_importance": compute_feature_importance(),
+        "model_performance": compute_model_performance(),
     }
 
 

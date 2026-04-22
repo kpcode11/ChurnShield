@@ -5,6 +5,10 @@
 1. **Model Comparison** — Evaluated 8 models, Random Forest won
 2. **Model Training** — Retrained with Random Forest (ROC-AUC: 0.9986)
 3. **Backend Ready** — `predictor.py` supports single & bulk predictions
+4. **Analytics Dashboard** — Now displays real data from Random Forest model
+   - Real feature importances extracted from trained model
+   - Actual model performance metrics displayed
+   - See `ANALYTICS_DASHBOARD_COMPLETE.md` for details
 
 ---
 
@@ -95,7 +99,11 @@ The frontend will run at `http://localhost:5173`
 1. **Dashboard** (`/`) — View KPIs and charts
 2. **Predict Customer** (`/predict`) — Single customer prediction form
 3. **Bulk Prediction** (`/bulk-prediction`) — Upload CSV for batch scoring
-4. **Analytics** (`/analytics`) — View model performance metrics
+4. **Analytics** (`/analytics`) — View real model insights:
+   - Model performance metrics (ROC-AUC, Accuracy, etc.)
+   - Top 10 feature importances from Random Forest
+   - Customer behavior analytics
+   - Churn trends by demographics
 5. **AI Messages** (`/ai-messages`) — Generate retention messages
 
 ---
@@ -209,11 +217,13 @@ This provides interactive API documentation where you can test all endpoints.
 
 ## 📚 Additional Resources
 
+- **Analytics Dashboard Documentation:** `ANALYTICS_DASHBOARD_COMPLETE.md`
 - **Model Comparison Report:** `model_comparison_results.csv`
 - **Model Comparison Chart:** `model_comparison_chart.png`
 - **Training Script:** `model/train_model.py`
 - **Prediction Logic:** `backend/predictor.py`
 - **Bulk Prediction Guide:** `backend/bulk_predictor_recommendation.py`
+- **API Test Script:** `test_analytics_api.py`
 
 ---
 

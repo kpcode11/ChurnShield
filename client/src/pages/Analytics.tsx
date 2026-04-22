@@ -9,27 +9,7 @@ import {
   type AnalyticsData, type TrendsData,
 } from "@/lib/api";
 
-// ── Pre-calculated feature correlations (from training data) ──────────────────
-const corrData = [
-  { feature: "DaysSinceOrder", churn: 0.82,  satisfaction: -0.65, tenure: -0.42, cashback: -0.31 },
-  { feature: "Satisfaction",   churn: -0.71, satisfaction:  1,    tenure:  0.35, cashback:  0.28 },
-  { feature: "Tenure",         churn: -0.45, satisfaction:  0.35, tenure:  1,    cashback:  0.52 },
-  { feature: "Cashback",       churn: -0.33, satisfaction:  0.28, tenure:  0.52, cashback:  1    },
-];
-
 // ── Small reusable components ─────────────────────────────────────────────────
-
-function HeatCell({ val }: { val: number }) {
-  const intensity = Math.abs(val);
-  const bg = val > 0
-    ? `rgba(220, 38, 38, ${intensity * 0.7})`
-    : `rgba(5, 150, 105, ${intensity * 0.7})`;
-  return (
-    <td className="p-2 text-xs text-center font-medium" style={{ backgroundColor: bg, color: intensity > 0.4 ? "white" : "inherit" }}>
-      {val.toFixed(2)}
-    </td>
-  );
-}
 
 function ChartCard({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
@@ -119,7 +99,7 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
 
-      {/* ── Header ── */}
+      {/* ── Header with Model Performance ── */}
       <div className="flex flex-wrap items-end gap-4 justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analytics Dashboard</h1>
@@ -128,6 +108,14 @@ export default function Analytics() {
             <span className="font-medium text-destructive">{data.overall_churn_rate}% overall churn</span>
             &ensp;·&ensp;{data.churned_customers.toLocaleString()} churned
           </p>
+          {data.model_performance && (
+            <div className="mt-2 px-3 py-2 bg-success/10 border border-success/20 rounded-md inline-block">
+              <p className="text-xs text-success font-medium">
+                ✓ {data.model_performance.model_name} — {(data.model_performance.roc_auc * 100).toFixed(2)}% ROC-AUC, 
+                {(data.model_performance.accuracy * 100).toFixed(2)}% Accuracy
+              </p>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Select value={cityFilter} onValueChange={setCityFilter}>
@@ -141,6 +129,25 @@ export default function Analytics() {
           </Select>
         </div>
       </div>
+
+      {/* ── Model Performance Cards ── */}
+      {data.model_performance && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {[
+            { label: "ROC-AUC", value: (data.model_performance.roc_auc * 100).toFixed(2) + "%", color: "text-success" },
+            { label: "Accuracy", value: (data.model_performance.accuracy * 100).toFixed(2) + "%", color: "text-success" },
+            { label: "Precision", value: (data.model_performance.precision * 100).toFixed(2) + "%", color: "text-blue-600" },
+            { label: "Recall", value: (data.model_performance.recall * 100).toFixed(2) + "%", color: "text-blue-600" },
+            { label: "False Positives", value: data.model_performance.false_positives.toString(), color: "text-destructive" },
+            { label: "False Negatives", value: data.model_performance.false_negatives.toString(), color: "text-destructive" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-card rounded-lg p-3 card-shadow text-center">
+              <p className="text-xs text-muted-foreground mb-1">{label}</p>
+              <p className={`text-lg font-bold ${color}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Row 1: City · Satisfaction · Gender ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -282,61 +289,32 @@ export default function Analytics() {
         </ChartCard>
       )}
 
-      {/* ── Row 4: Tenure Bands · Category · Avg Days ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-        <ChartCard title="Churn Rate by Tenure Band (months)">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={toBarData(data.churn_by_tenure, "range")}>
+      {/* ── Row 4: Feature Importance (Real Data from Random Forest) ── */}
+      {data.feature_importance && data.feature_importance.length > 0 && (
+        <ChartCard title="Top 10 Feature Importances — Random Forest Model">
+          <p className="text-xs text-muted-foreground mb-3">
+            Real feature importances from the trained Random Forest model. Higher values indicate stronger predictive power for churn.
+          </p>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data.feature_importance.slice(0, 10)} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
-              <XAxis dataKey="range" tick={{ fontSize: 9 }} />
-              <YAxis tick={T} unit="%" domain={[0, 55]} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} />
-              <Bar dataKey="rate" name="Churn %" fill="hsl(0,72%,51%)" radius={[4, 4, 0, 0]} />
+              <XAxis type="number" tick={T} unit="%" domain={[0, 30]} />
+              <YAxis type="category" dataKey="feature" tick={{ fontSize: 10 }} width={150} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Importance"]} />
+              <Bar dataKey="importance_pct" name="Importance %" fill="hsl(209,53%,40%)" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Churn Rate by Order Category">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={toBarData(data.churn_by_category, "cat")} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
-              <XAxis type="number" tick={T} unit="%" domain={[0, 40]} />
-              <YAxis type="category" dataKey="cat" tick={{ fontSize: 8 }} width={105} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} />
-              <Bar dataKey="rate" name="Churn %" fill="hsl(209,53%,40%)" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Feature Correlation (pre-calculated)">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs mt-1">
-              <thead>
-                <tr>
-                  <th className="p-2 text-left text-muted-foreground text-xs font-normal"></th>
-                  {["Churn", "Satis.", "Tenure", "Cash."].map(h => (
-                    <th key={h} className="p-2 text-center text-muted-foreground text-xs font-normal">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {corrData.map(row => (
-                  <tr key={row.feature}>
-                    <td className="p-2 text-xs font-medium text-muted-foreground">{row.feature}</td>
-                    <HeatCell val={row.churn} />
-                    <HeatCell val={row.satisfaction} />
-                    <HeatCell val={row.tenure} />
-                    <HeatCell val={row.cashback} />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="text-xs text-muted-foreground mt-2 text-center italic">Pearson r · from XGBoost training set</p>
+          <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-2">
+            {data.feature_importance.slice(0, 5).map((f, i) => (
+              <div key={f.feature} className="bg-muted/40 rounded-md px-2 py-1.5 text-center">
+                <p className="text-xs text-muted-foreground">#{i + 1}</p>
+                <p className="text-xs font-semibold truncate">{f.feature}</p>
+                <p className="text-sm font-bold text-card-foreground">{f.importance_pct}%</p>
+              </div>
+            ))}
           </div>
         </ChartCard>
-
-      </div>
+      )}
 
       {/* ── Row 5: KPI Comparison — Churned vs Stayed (full-width grouped bar) ── */}
       <ChartCard title="Behavioural KPIs — Churned vs Stayed">

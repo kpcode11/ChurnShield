@@ -1,29 +1,13 @@
 import { useEffect, useState } from "react";
 import { KpiCard } from "@/components/KpiCard";
-import { RiskBadge } from "@/components/RiskBadge";
-import { Button } from "@/components/ui/button";
 import { Users, UserMinus, AlertTriangle, IndianRupee } from "lucide-react";
 import { fetchAnalytics, fetchAnalyticsTrends, type AnalyticsData, type TrendsData } from "@/lib/api";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
   AreaChart, Area,
+  BarChart, Bar,
 } from "recharts";
-
-// Static placeholder — replace with a /customers/at-risk API endpoint to make this live
-
-const topCustomers = [
-  { id: "#1042", tenure: 14, daysSince: 47, risk: 0.78, level: "high" as const, action: "Priority call + ₹150 coupon" },
-  { id: "#2091", tenure: 8, daysSince: 52, risk: 0.85, level: "high" as const, action: "Immediate outreach + free delivery" },
-  { id: "#3344", tenure: 22, daysSince: 38, risk: 0.72, level: "high" as const, action: "Loyalty reward + feedback survey" },
-  { id: "#4521", tenure: 5, daysSince: 61, risk: 0.91, level: "high" as const, action: "Win-back campaign + ₹200 off" },
-  { id: "#5678", tenure: 30, daysSince: 25, risk: 0.55, level: "medium" as const, action: "Engagement email series" },
-  { id: "#6102", tenure: 11, daysSince: 33, risk: 0.63, level: "medium" as const, action: "Personalized recommendations" },
-  { id: "#7890", tenure: 3, daysSince: 44, risk: 0.68, level: "medium" as const, action: "Onboarding follow-up call" },
-  { id: "#8234", tenure: 18, daysSince: 29, risk: 0.58, level: "medium" as const, action: "Cross-sell opportunity" },
-  { id: "#9001", tenure: 42, daysSince: 55, risk: 0.82, level: "high" as const, action: "VIP retention package" },
-  { id: "#9512", tenure: 7, daysSince: 40, risk: 0.74, level: "high" as const, action: "Discount + priority support" },
-];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -78,6 +62,14 @@ const Index = () => {
     { name: "Medium Risk", value: analytics ? Math.round(retained * 0.25) : 0, color: "hsl(38, 92%, 50%)" },
     { name: "High Risk",   value: analytics ? analytics.churned_customers : 0,  color: "hsl(0, 72%, 51%)" },
   ];
+
+  // Top churn drivers from analytics (satisfaction, city tier, device)
+  const satisfactionData = analytics
+    ? Object.entries(analytics.churn_by_satisfaction)
+        .map(([score, rate]) => ({ score: `Score ${score}`, rate: parseFloat(rate.toFixed(1)) }))
+        .sort((a, b) => b.rate - a.rate)
+        .slice(0, 5)
+    : [];
 
   return (
     <div className="space-y-8">
@@ -141,54 +133,24 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Priority Table */}
+      {/* Top Churn Drivers */}
       <div className="bg-card rounded-xl card-shadow overflow-hidden">
-        <div className="px-6 py-5 border-b flex items-center justify-between">
+        <div className="px-6 py-5 border-b">
           <div>
-            <h3 className="text-sm font-semibold text-card-foreground">Priority Attention Required</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Top 10 customers needing immediate action</p>
+            <h3 className="text-sm font-semibold text-card-foreground">Top Churn Drivers</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Satisfaction scores with highest churn rates</p>
           </div>
-          <Button variant="outline" size="sm" className="text-xs">
-            View All
-          </Button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/30">
-                {["Customer ID", "Tenure", "Days Inactive", "Risk Score", "Status", "Suggested Action", ""].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {topCustomers.map((c, i) => (
-                <tr key={c.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3.5 font-semibold text-card-foreground">{c.id}</td>
-                  <td className="px-4 py-3.5 text-muted-foreground">{c.tenure} mo</td>
-                  <td className="px-4 py-3.5 text-muted-foreground">{c.daysSince} days</td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${c.risk > 0.7 ? "bg-destructive" : c.risk > 0.5 ? "bg-accent" : "bg-success"}`}
-                          style={{ width: `${c.risk * 100}%` }}
-                        />
-                      </div>
-                      <span className="font-semibold text-card-foreground text-xs">{(c.risk * 100).toFixed(0)}%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5"><RiskBadge level={c.level} /></td>
-                  <td className="px-4 py-3.5 text-muted-foreground text-xs max-w-[200px] truncate">{c.action}</td>
-                  <td className="px-4 py-3.5">
-                    <Button variant="outline" size="sm" className="text-xs h-7 rounded-lg">
-                      Action →
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="p-6">
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={satisfactionData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              <XAxis type="number" tick={{ fontSize: 11 }} unit="%" domain={[0, 60]} />
+              <YAxis type="category" dataKey="score" tick={{ fontSize: 11 }} width={80} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn Rate"]} />
+              <Bar dataKey="rate" name="Churn %" fill="hsl(0, 72%, 51%)" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
