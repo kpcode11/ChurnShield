@@ -167,13 +167,13 @@ from backend.message_generator import generate_message, generate_and_send
 from backend.analytics import build_analytics_response, build_trends_response
 
 # ──────────────────── DATA PATH + CACHED DATAFRAME ────────────────────
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "ecommerce_churn.csv")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "E Commerce Dataset.xlsx")
 
 # Load the dataset once at startup and cache it in memory.
 # All analytics endpoints read from this shared, immutable DataFrame.
 # Re-reads happen only if the process is restarted (acceptable for a CSV-backed app).
 try:
-    _df_cache: pd.DataFrame = pd.read_csv(DATA_PATH)
+    _df_cache: pd.DataFrame = pd.read_excel(DATA_PATH, sheet_name="E Comm")
 except FileNotFoundError:
     _df_cache = pd.DataFrame()  # empty sentinel; endpoints will raise 503
 

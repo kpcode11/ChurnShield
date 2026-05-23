@@ -51,15 +51,18 @@ def get_feature_names() -> list[str]:
 # Single-row encoding
 # ──────────────────────────────────────────────────────────────────
 
-def _encode_input(data: dict) -> np.ndarray:
+def _encode_input(data: dict) -> pd.DataFrame:
     """
-    Convert a single customer dict → NumPy row for model inference.
+    Convert a single customer dict → single-row DataFrame for model inference.
+
+    Returns a DataFrame (not a bare numpy array) so sklearn uses feature names
+    for column alignment — prevents silent feature-order mismatches.
 
     Strategy:
       • Numeric nulls/missing: fill with training-set median (from impute_values)
-      • Categorical nulls/missing: fill with training-set mode (from impute_values)
+      • Categorical nulls/missing: fill with first class from LabelEncoder
       • Numeric values: clipped to [min, max] from training data (handles outliers)
-      • Unknown categories: mapped to the most frequent class (mode index 0)
+      • Unknown categories: mapped to the most frequent class (classes_[0])
     """
     _, art = _load_model()
     encoders      = art["encoders"]
@@ -72,33 +75,30 @@ def _encode_input(data: dict) -> np.ndarray:
         val = data.get(feat)
 
         if feat in encoders:
-            # ── Categorical ──────────────────────────────────────
+            # ── Categorical ──────────────────────────────────────────────────
             le = encoders[feat]
+            # Resolve missing / None
             if val is None or (isinstance(val, float) and np.isnan(val)):
-                # Use training-mode (index 0 after LabelEncoder sorts classes)
-                fill = impute.get(feat, le.classes_[0])
-                val  = fill
+                val = le.classes_[0]
             val_str = str(val)
             if val_str in le.classes_:
                 row[feat] = int(le.transform([val_str])[0])
             else:
-                # Unseen category → fallback to training mode
-                mode_val = impute.get(feat, le.classes_[0])
-                row[feat] = int(le.transform([str(mode_val)])[0])
+                # Unseen category → fallback to first (most common after sort)
+                row[feat] = 0
         else:
-            # ── Numeric ─────────────────────────────────────────
+            # ── Numeric ──────────────────────────────────────────────────────
             if val is None or (isinstance(val, float) and np.isnan(val)):
                 val = impute.get(feat, 0.0)
             val = float(val)
-
-            # Clip to training range if recorded
+            # Clip to training range
             if feat in ranges:
                 lo, hi = ranges[feat]
                 val = max(lo, min(hi, val))
-
             row[feat] = val
 
-    return np.array([[row[f] for f in feature_names]])
+    # Return a DataFrame so RandomForestClassifier receives named columns
+    return pd.DataFrame([row], columns=feature_names)
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -113,12 +113,12 @@ def predict_single(data: dict) -> dict:
       {
         "churn":           int,    # 0 = Stay, 1 = Churn
         "probability":     float,  # raw probability 0.0–1.0  (4 dp)
-        "probability_pct": float,  # percentage 0.0–100.0     (1 dp)  ← new
+        "probability_pct": float,  # percentage 0.0–100.0     (1 dp)
         "risk":            str,    # "Low" | "Medium" | "High"
       }
     """
     model, art = _load_model()
-    X         = _encode_input(data)
+    X          = _encode_input(data)          # returns a named DataFrame
     proba      = float(model.predict_proba(X)[0][1])   # P(churn)
 
     threshold  = art.get("best_threshold", 0.5)
@@ -188,11 +188,10 @@ def predict_bulk(df: pd.DataFrame) -> pd.DataFrame:
     for col in cat_cols:
         if col in encoders:
             le = encoders[col]
-            mode_fallback = impute.get(col, le.classes_[0])
             df_proc[col] = df_proc[col].apply(
                 lambda x: int(le.transform([str(x)])[0])
                 if str(x) in le.classes_
-                else int(le.transform([str(mode_fallback)])[0])
+                else 0   # fallback to first class (index 0)
             )
         else:
             # Column not seen during training — label-encode on the fly as fallback
@@ -203,10 +202,10 @@ def predict_bulk(df: pd.DataFrame) -> pd.DataFrame:
     for feat in feature_names:
         if feat not in df_proc.columns:
             df_proc[feat] = impute.get(feat, 0)
-    df_proc = df_proc[feature_names]
+    df_proc = df_proc[feature_names]   # named DataFrame — preserves column order for RF
 
     # ── Inference ────────────────────────────────────────────────
-    probas = model.predict_proba(df_proc.values)[:, 1]
+    probas = model.predict_proba(df_proc)[:, 1]   # named DataFrame → correct column order
 
     # ── Build output ─────────────────────────────────────────────
     result = df.copy()

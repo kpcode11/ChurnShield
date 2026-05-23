@@ -7,7 +7,7 @@ Enhanced with Random Forest model insights and real feature importance data.
 All compute_* functions accept a pre-loaded DataFrame and return plain Python
 dicts / lists that FastAPI can serialise directly to JSON.
 
-Column reference (ecommerce_churn.csv):
+Column reference (E Commerce Dataset.xlsx, sheet "E Comm"):
   CustomerID, Churn, Tenure, PreferredLoginDevice, CityTier, WarehouseToHome,
   PreferredPaymentMode, Gender, HourSpendOnApp, NumberOfDeviceRegistered,
   PreferedOrderCat, SatisfactionScore, MaritalStatus, NumberOfAddress,
