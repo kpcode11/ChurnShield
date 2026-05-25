@@ -71,8 +71,9 @@ export default function Analytics() {
         { metric: "Orders",       churned: data.kpi_comparison.avg_orders.churned,            stayed: data.kpi_comparison.avg_orders.stayed },
         { metric: "App Hrs",      churned: data.kpi_comparison.avg_app_hours.churned,         stayed: data.kpi_comparison.avg_app_hours.stayed },
         { metric: "Days Idle",    churned: data.kpi_comparison.avg_days_since_order.churned,  stayed: data.kpi_comparison.avg_days_since_order.stayed },
-        { metric: "Coupons",      churned: data.kpi_comparison.avg_coupons_used.churned,      stayed: data.kpi_comparison.avg_coupons_used.stayed },
-        { metric: "Complain %",   churned: data.kpi_comparison.avg_complain_rate.churned,     stayed: data.kpi_comparison.avg_complain_rate.stayed },
+        { metric: "Total Spend",  churned: data.kpi_comparison.avg_total_spend.churned,       stayed: data.kpi_comparison.avg_total_spend.stayed },
+        { metric: "Return Rate %", churned: data.kpi_comparison.avg_return_rate.churned,      stayed: data.kpi_comparison.avg_return_rate.stayed },
+        { metric: "Support Tkt",  churned: data.kpi_comparison.avg_support_tickets.churned,   stayed: data.kpi_comparison.avg_support_tickets.stayed },
       ]
     : [];
 
@@ -191,8 +192,8 @@ export default function Analytics() {
 
       </div>
 
-      {/* ── Row 2: Device · Marital Status · Payment Mode ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* ── Row 2: Device · Marital Status · Payment Mode · Subscription ── */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
         <ChartCard title="Churn Rate by Login Device">
           <ResponsiveContainer width="100%" height={200}>
@@ -226,6 +227,18 @@ export default function Analytics() {
               <YAxis type="category" dataKey="mode" tick={{ fontSize: 9 }} width={95} />
               <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} />
               <Bar dataKey="rate" name="Churn %" fill="hsl(32,90%,48%)" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Churn Rate by Subscription">
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={toBarData(data.churn_by_subscription, "plan")} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
+              <XAxis type="number" tick={T} unit="%" domain={[0, 35]} />
+              <YAxis type="category" dataKey="plan" tick={{ fontSize: 9 }} width={80} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} />
+              <Bar dataKey="rate" name="Churn %" fill="hsl(340,80%,50%)" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -289,11 +302,11 @@ export default function Analytics() {
         </ChartCard>
       )}
 
-      {/* ── Row 4: Feature Importance (Real Data from Random Forest) ── */}
+      {/* ── Row 4: Feature Importance (Real Data from XGBoost) ── */}
       {data.feature_importance && data.feature_importance.length > 0 && (
-        <ChartCard title="Top 10 Feature Importances — Random Forest Model">
+        <ChartCard title="Top 10 Feature Importances — XGBoost Model">
           <p className="text-xs text-muted-foreground mb-3">
-            Real feature importances from the trained Random Forest model. Higher values indicate stronger predictive power for churn.
+            Real feature importances from the trained XGBoost model. Higher values indicate stronger predictive power for churn.
           </p>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data.feature_importance.slice(0, 10)} layout="vertical">
@@ -335,10 +348,10 @@ export default function Analytics() {
         {/* Summary insight strip */}
         <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "Avg Cashback",   c: data.kpi_comparison.avg_cashback,         unit: "₹",  lowerIsBad: false },
-            { label: "Avg Orders",     c: data.kpi_comparison.avg_orders,            unit: "",   lowerIsBad: true  },
-            { label: "Complaint Rate", c: data.kpi_comparison.avg_complain_rate,     unit: "%",  lowerIsBad: true  },
-            { label: "Days Idle",      c: data.kpi_comparison.avg_days_since_order,  unit: " d", lowerIsBad: false },
+            { label: "Avg Total Spend", c: data.kpi_comparison.avg_total_spend,      unit: "₹",  lowerIsBad: true },
+            { label: "Avg Return Rate", c: data.kpi_comparison.avg_return_rate,      unit: "%",  lowerIsBad: true },
+            { label: "Support Tickets", c: data.kpi_comparison.avg_support_tickets,  unit: "",   lowerIsBad: true },
+            { label: "Avg Customer Age",c: data.kpi_comparison.avg_customer_age,     unit: "y",  lowerIsBad: false },
           ].map(({ label, c, unit, lowerIsBad }) => {
             const diff   = c.churned - c.stayed;
             const bad    = lowerIsBad ? diff < 0 : diff > 0;

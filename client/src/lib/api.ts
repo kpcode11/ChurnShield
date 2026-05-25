@@ -43,10 +43,11 @@ export interface CustomerInput {
 }
 
 export interface PredictResponse {
-  churn: 0 | 1;
-  probability: number;       // 0.0–1.0
-  probability_pct: number;   // 0.0–100.0 (pre-computed by backend)
-  risk: "Low" | "Medium" | "High";
+  prediction: 0 | 1;
+  churn_probability: number;       // 0.0–1.0
+  risk_level: "Low" | "Medium" | "High";
+  top_risk_factors: { feature: string; impact: number }[];
+  threshold_used: number;
 }
 
 // Matches backend SuggestInput schema
@@ -203,6 +204,15 @@ export interface KpiComparison {
   avg_coupons_used:      KpiPair;
   avg_num_devices:       KpiPair;
   avg_complain_rate:     KpiPair;
+  avg_total_spend:       KpiPair;
+  avg_order_value:       KpiPair;
+  avg_return_rate:       KpiPair;
+  avg_customer_age:      KpiPair;
+  avg_last_login_days:   KpiPair;
+  avg_reviews_given:     KpiPair;
+  avg_wishlist_items:    KpiPair;
+  avg_referrals_made:    KpiPair;
+  avg_support_tickets:   KpiPair;
 }
 
 export interface FeatureImportance {
@@ -236,6 +246,7 @@ export interface AnalyticsData {
   churn_by_marital_status:  Record<string, number>;
   churn_by_category:        Record<string, number>;
   churn_by_payment_mode:    Record<string, number>;
+  churn_by_subscription:    Record<string, number>;
   avg_days_since_last_order: { churned: number; stayed: number };
   churn_by_tenure:          Record<string, number>;
   kpi_comparison:           KpiComparison;

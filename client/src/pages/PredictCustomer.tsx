@@ -96,7 +96,7 @@ export default function PredictCustomer() {
   const [result, setResult]         = useState<PredictResponse | null>(null);
   const [suggestion, setSuggestion] = useState<SuggestResponse | null>(null);
 
-  // ── All 18 model features — defaults match training-set medians ─────────────
+  // ── All 28 model features — defaults match training-set medians ─────────────
   // Real churner profile: Tenure≈3, Complain=1, CashbackAmount≈160
   // Real stayer profile:  Tenure≈12, Complain=0, CashbackAmount≈181
   const [tenure,        setTenure]        = useState([9]);    // training median
@@ -117,6 +117,16 @@ export default function PredictCustomer() {
   const [gender,        setGender]        = useState("Male");
   const [orderCat,      setOrderCat]      = useState("Laptop & Accessory");
   const [maritalStatus, setMaritalStatus] = useState("Single");
+  const [totalSpend, setTotalSpend] = useState("500");
+  const [avgOrderValue, setAvgOrderValue] = useState("100");
+  const [returnRate, setReturnRate] = useState([0.1]);
+  const [customerAge, setCustomerAge] = useState([30]);
+  const [lastLoginDaysAgo, setLastLoginDaysAgo] = useState("5");
+  const [reviewsGiven, setReviewsGiven] = useState("0");
+  const [wishlistItems, setWishlistItems] = useState("0");
+  const [subscriptionPlan, setSubscriptionPlan] = useState("Free");
+  const [referralsMade, setReferralsMade] = useState("0");
+  const [supportTicketCount, setSupportTicketCount] = useState("0");
 
   const handlePredict = async () => {
     setLoading(true);
@@ -143,6 +153,16 @@ export default function PredictCustomer() {
       Gender:                      gender,
       PreferedOrderCat:            orderCat,
       MaritalStatus:               maritalStatus,
+      TotalSpend:                  parseFloat(totalSpend) || 0,
+      AvgOrderValue:               parseFloat(avgOrderValue) || 0,
+      ReturnRate:                  returnRate[0],
+      CustomerAge:                 customerAge[0],
+      LastLoginDaysAgo:            parseFloat(lastLoginDaysAgo) || 0,
+      ReviewsGiven:                parseFloat(reviewsGiven) || 0,
+      WishlistItems:               parseFloat(wishlistItems) || 0,
+      SubscriptionPlan:            subscriptionPlan,
+      ReferralsMade:               parseFloat(referralsMade) || 0,
+      SupportTicketCount:          parseFloat(supportTicketCount) || 0,
     };
 
     try {
@@ -182,19 +202,19 @@ export default function PredictCustomer() {
     if (riskFactors.length === 0)      riskFactors.push("No major churn signals detected");
   }
 
-  const riskPct   = result ? Math.round(result.probability_pct) : 0;
-  const riskLevel = result?.risk ?? "Low";
+  const riskPct   = result ? Math.round(result.churn_probability * 100) : 0;
+  const riskLevel = result?.risk_level ?? "Low";
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Predict Single Customer</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          All 18 model features — for the most accurate churn prediction
+          All 28 model features — for the most accurate churn prediction
         </p>
         <div className="mt-3 px-3 py-2 bg-success/10 border border-success/20 rounded-md inline-block">
           <p className="text-xs text-success font-medium">
-            ✓ Random Forest — 99.86% ROC-AUC · 18 features · threshold 0.32
+            ✓ XGBoost — 92.10% ROC-AUC · 28 features · threshold 0.43
           </p>
         </div>
       </div>
@@ -222,6 +242,15 @@ export default function PredictCustomer() {
                 ]}
               />
             </div>
+            <SliderField label="Customer Age" value={customerAge} onChange={setCustomerAge} min={18} max={100} />
+            <SelectField label="Subscription Plan" value={subscriptionPlan} onChange={setSubscriptionPlan}
+              options={[
+                { value: "Free", label: "Free" },
+                { value: "Silver", label: "Silver" },
+                { value: "Gold", label: "Gold" },
+                { value: "Platinum", label: "Platinum" },
+              ]}
+            />
             <SelectField label="Marital Status" value={maritalStatus} onChange={setMaritalStatus}
               options={[
                 { value: "Single", label: "Single" },
@@ -241,6 +270,11 @@ export default function PredictCustomer() {
             />
             <SliderField label="Hours on App / day" value={hourOnApp} onChange={setHourOnApp} max={5} step={0.5} />
             <SliderField label="Devices Registered" value={numDevices} onChange={setNumDevices} min={1} max={6} />
+            <div className="grid grid-cols-2 gap-3">
+              <NumberField label="Last Login Days Ago" value={lastLoginDaysAgo} onChange={setLastLoginDaysAgo} />
+              <NumberField label="Wishlist Items" value={wishlistItems} onChange={setWishlistItems} />
+            </div>
+            <NumberField label="Referrals Made" value={referralsMade} onChange={setReferralsMade} />
             <SliderField label="Saved Addresses" value={numAddresses} onChange={setNumAddresses} min={1} max={10} />
           </Section>
 
@@ -261,6 +295,13 @@ export default function PredictCustomer() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <NumberField label="Coupons Used" value={couponsUsed} onChange={setCouponsUsed} />
+              <NumberField label="Total Spend (₹)" value={totalSpend} onChange={setTotalSpend} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <NumberField label="Avg Order Value (₹)" value={avgOrderValue} onChange={setAvgOrderValue} />
+              <div className="pt-2">
+                <SliderField label="Return Rate" value={returnRate} onChange={setReturnRate} max={1} step={0.01} />
+              </div>
               <NumberField label="Order Hike YoY (%)" value={orderHike} onChange={setOrderHike} />
             </div>
             <SliderField label="Warehouse → Home (km)" value={warehouseDist} onChange={setWarehouseDist} max={60} />
@@ -283,6 +324,10 @@ export default function PredictCustomer() {
           <Section title="Satisfaction">
             <SliderField label="Satisfaction Score" value={satisfaction} onChange={setSatisfaction} min={1} max={5} />
             <p className="text-[10px] text-muted-foreground/60 -mt-1">1 = Very dissatisfied · 5 = Very satisfied</p>
+            <div className="grid grid-cols-2 gap-3">
+              <NumberField label="Reviews Given" value={reviewsGiven} onChange={setReviewsGiven} />
+              <NumberField label="Support Tickets" value={supportTicketCount} onChange={setSupportTicketCount} />
+            </div>
             <div className="flex items-center justify-between pt-1">
               <Label className="text-xs text-muted-foreground">Complaint Filed?</Label>
               <Switch checked={complaint} onCheckedChange={setComplaint} />
@@ -308,8 +353,8 @@ export default function PredictCustomer() {
                 <p className="text-5xl font-bold text-card-foreground mt-2">{riskPct}%</p>
                 <Progress value={riskPct} className={`mt-3 h-3 ${progressColors[riskLevel]}`} />
                 <p className="text-sm text-muted-foreground mt-3">
-                  {result.probability_pct.toFixed(1)}% probability of churn
-                  {result.churn === 1
+                  {(result.churn_probability * 100).toFixed(1)}% probability of churn
+                  {result.prediction === 1
                     ? " — customer predicted to churn."
                     : " — customer predicted to stay."}
                 </p>
@@ -330,10 +375,10 @@ export default function PredictCustomer() {
                 </div>
               </div>
 
-              {/* Input summary — all 18 features */}
+              {/* Input summary — all 28 features */}
               <div className="bg-card rounded-lg p-5 card-shadow">
                 <h4 className="text-sm font-semibold text-card-foreground mb-3">
-                  All 18 Features Sent to Model
+                  All 28 Features Sent to Model
                 </h4>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                   {[
@@ -354,6 +399,16 @@ export default function PredictCustomer() {
                     ["Category",      orderCat],
                     ["Gender",        gender],
                     ["Marital",       maritalStatus],
+                    ["Age",           `${customerAge[0]}`],
+                    ["Plan",          subscriptionPlan],
+                    ["Last Login",    `${lastLoginDaysAgo}d ago`],
+                    ["Wishlist",      wishlistItems],
+                    ["Referrals",     referralsMade],
+                    ["Total Spend",   `₹${totalSpend}`],
+                    ["Avg Order Val", `₹${avgOrderValue}`],
+                    ["Return Rate",   `${Math.round(returnRate[0] * 100)}%`],
+                    ["Reviews",       reviewsGiven],
+                    ["Tickets",       supportTicketCount],
                     ["Warehouse km",  `${warehouseDist[0]}`],
                   ].map(([k, v]) => (
                     <div key={k} className="flex justify-between border-b border-border/30 pb-1">
@@ -384,7 +439,7 @@ export default function PredictCustomer() {
             <div className="bg-card rounded-lg p-12 card-shadow flex items-center justify-center">
               <p className="text-muted-foreground text-sm text-center">
                 {loading
-                  ? "Running prediction across all 18 features…"
+                  ? "Running prediction across all 28 features…"
                   : "Fill in the customer details and click Predict Churn"}
               </p>
             </div>

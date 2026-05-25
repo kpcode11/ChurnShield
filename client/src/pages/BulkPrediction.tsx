@@ -69,7 +69,7 @@ export default function BulkPrediction() {
         <p className="text-sm text-muted-foreground mt-1">Upload thousands of customers and get scored predictions</p>
         <div className="mt-3 px-3 py-2 bg-success/10 border border-success/20 rounded-md">
           <p className="text-xs text-success font-medium">
-            ✓ Powered by Random Forest ML — 99.86% ROC-AUC, only 2% error rate
+            ✓ Powered by XGBoost ML — 92.10% ROC-AUC, 8.8% error rate
           </p>
         </div>
       </div>

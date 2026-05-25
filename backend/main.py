@@ -156,7 +156,7 @@ def _write_summary_sheet(writer: pd.ExcelWriter, result_df: pd.DataFrame):
 # Ensure project root is on path so we can import sibling packages
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from backend.predictor import predict_single, predict_bulk
+from src.predict import predict as xgb_predict
 from backend.suggestions import get_suggestion
 from backend.revenue import (
     calculate_revenue_impact,
@@ -167,13 +167,13 @@ from backend.message_generator import generate_message, generate_and_send
 from backend.analytics import build_analytics_response, build_trends_response
 
 # ──────────────────── DATA PATH + CACHED DATAFRAME ────────────────────
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "E Commerce Dataset.xlsx")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "ecommerce_churn_enhanced.csv")
 
 # Load the dataset once at startup and cache it in memory.
 # All analytics endpoints read from this shared, immutable DataFrame.
 # Re-reads happen only if the process is restarted (acceptable for a CSV-backed app).
 try:
-    _df_cache: pd.DataFrame = pd.read_excel(DATA_PATH, sheet_name="E Comm")
+    _df_cache: pd.DataFrame = pd.read_csv(DATA_PATH)
 except FileNotFoundError:
     _df_cache = pd.DataFrame()  # empty sentinel; endpoints will raise 503
 
@@ -221,6 +221,16 @@ class CustomerInput(BaseModel):
     OrderCount: Optional[float] = 2
     DaySinceLastOrder: Optional[float] = 5
     CashbackAmount: Optional[float] = 150
+    TotalSpend: Optional[float] = 0.0
+    AvgOrderValue: Optional[float] = 0.0
+    ReturnRate: Optional[float] = 0.0
+    CustomerAge: Optional[int] = 30
+    LastLoginDaysAgo: Optional[int] = 5
+    ReviewsGiven: Optional[int] = 0
+    WishlistItems: Optional[int] = 0
+    SubscriptionPlan: Optional[str] = "Free"
+    ReferralsMade: Optional[int] = 0
+    SupportTicketCount: Optional[int] = 0
 
 
 class RevenueInput(BaseModel):
@@ -286,8 +296,8 @@ class MessageSendInput(BaseModel):
 @app.post("/predict")
 def predict_customer(customer: CustomerInput):
     """Module 1: Predict churn for a single customer."""
-    data = customer.dict()
-    result = predict_single(data)
+    data = customer.model_dump()
+    result = xgb_predict(data)
     return result
 
 
@@ -321,7 +331,7 @@ async def bulk_predict(file: UploadFile = File(...)):
         raise HTTPException(status_code=422, detail="CSV contains no data rows.")
 
     # ── 3. Batch predictions ──────────────────────────────────────
-    result_df = predict_bulk(df)
+    result_df = xgb_predict(df)
 
     # ── 4. Enrich output columns ──────────────────────────────────
     # Rename Suggested_Action → Recommended_Action (clearer for end-users)

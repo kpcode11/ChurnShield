@@ -1,0 +1,23 @@
+{
+  "accuracy":  0.912,
+  "auc_roc":   0.921,
+  "f1_churn":  0.781,
+  "recall":    0.803,
+  "precision": 0.760,
+  "threshold": 0.430,
+  "model": "XGBoost",
+  "vs_baseline": {
+    "description": "Model that always predicts Not Churned",
+    "accuracy": 0.835,
+    "auc_roc":  0.500,
+    "f1_churn": 0.000,
+    "recall":   0.000
+  },
+  "vs_naive_baseline": {
+    "description": "Model that always predicts Not Churned",
+    "accuracy": 0.835,
+    "auc_roc":  0.500,
+    "f1_churn": 0.000,
+    "recall":   0.000
+  }
+}

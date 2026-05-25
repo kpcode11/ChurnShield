@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 
 # ──────────────────── PATHS ────────────────────
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH   = os.path.join(BASE_DIR, "..", "data", "E Commerce Dataset.xlsx")
+DATA_PATH   = os.path.join(BASE_DIR, "..", "data", "ecommerce_churn_enhanced.csv")
 MODEL_PATH  = os.path.join(BASE_DIR, "churn_model.pkl")
 ENCODER_PATH = os.path.join(BASE_DIR, "churn_encoder.pkl")
 
@@ -55,8 +55,7 @@ def load_and_clean(path: str):
       3. Fill NaN values using those statistics
       4. Return cleaned DataFrame and the imputation lookup dict
     """
-    # df = pd.read_csv(path)
-    df = pd.read_excel(path, sheet_name="E Comm")
+    df = pd.read_csv(path)
     print(f"Loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
 
     # 1. Schema Validation & Drop non-predictive columns
