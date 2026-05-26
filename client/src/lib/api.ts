@@ -4,11 +4,12 @@
  * Vite proxies /api/* → http://localhost:8000 during development,
  * so no absolute URL or CORS header is required in dev.
  *
- * For production, set VITE_API_BASE_URL in .env.production:
- *   VITE_API_BASE_URL=https://your-backend.com
+ * In production, it points directly to the deployed Render backend.
  */
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "") + "/api";
+const BASE_URL = import.meta.env.PROD 
+  ? "https://churnshield-nnbs.onrender.com" 
+  : "/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
