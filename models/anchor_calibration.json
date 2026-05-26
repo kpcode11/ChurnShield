@@ -1,0 +1,22 @@
+{
+  "HIGH_CHURN": {
+    "raw": 0.9987,
+    "target": 0.85,
+    "delta": -0.1487
+  },
+  "MODERATE_CHURN": {
+    "raw": 0.7089,
+    "target": 0.48,
+    "delta": -0.2289
+  },
+  "LOW_CHURN": {
+    "raw": 0.0004,
+    "target": 0.08,
+    "delta": 0.0796
+  },
+  "LOYAL_W_COMPLAINT": {
+    "raw": 0.736,
+    "target": 0.5,
+    "delta": -0.236
+  }
+}

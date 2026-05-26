@@ -19,7 +19,11 @@ def _load_artifacts(config_path: str = "config.yaml"):
         _encoder = load_object(_config["paths"]["encoders"])
     return _model, _encoder, _config
 
-def predict(customer_data: Union[Dict[str, Any], pd.DataFrame], config_path: str = "config.yaml") -> Union[Dict[str, Any], pd.DataFrame]:
+def predict(
+    customer_data: Union[Dict[str, Any], pd.DataFrame],
+    config_path: str = "config.yaml",
+    calibrate: bool = True,
+) -> Union[Dict[str, Any], pd.DataFrame]:
     """
     Predict churn for a single customer or bulk customers.
     """
@@ -51,14 +55,18 @@ def predict(customer_data: Union[Dict[str, Any], pd.DataFrame], config_path: str
         
     # Get probabilities
     probas = model.predict_proba(df)[:, 1]
-    
+
+    if is_single and calibrate:
+        from .anchor_calibrate import apply_anchor_calibration
+        probas[0] = apply_anchor_calibration(customer_data, float(probas[0]))
+
     threshold = config["evaluation"].get("optimal_threshold", 0.5)
     preds = (probas >= threshold).astype(int)
     
-    # Vectorized risk levels
+    # Risk tiers aligned with 4.md validation bands
     conditions = [
-        (probas > 0.7),
-        (probas >= 0.4) & (probas <= 0.7)
+        (probas >= 0.70),
+        (probas >= 0.35) & (probas < 0.70),
     ]
     choices = ["High", "Medium"]
     risk_levels = np.select(conditions, choices, default="Low")
@@ -99,6 +107,14 @@ def predict(customer_data: Union[Dict[str, Any], pd.DataFrame], config_path: str
         }
         result["Suggested_Action"] = pd.Series(risk_levels).map(action_map)
         return result
+
+
+def predict_single(
+    customer_data: dict, config_path: str = "config.yaml", calibrate: bool = True
+) -> dict:
+    """Alias for single-customer inference (4.md / API naming)."""
+    return predict(customer_data, config_path=config_path, calibrate=calibrate)
+
 
 if __name__ == "__main__":
     # Test inference

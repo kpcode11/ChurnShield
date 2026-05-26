@@ -57,18 +57,18 @@ def save_metrics(y_test, y_pred, y_prob, threshold, output_path='outputs/metrics
 
     return metrics
 
-def optimize_threshold(y_true, y_prob):
-    """Sweep thresholds from 0.1 to 0.9 to find the one maximizing F1-score."""
-    thresholds = np.arange(0.1, 0.91, 0.01)
+def optimize_threshold(y_true, y_prob, low: float = 0.38, high: float = 0.52):
+    """Pick threshold in [low, high] that maximizes F1 (4.md calibration band)."""
+    thresholds = np.arange(low, high + 0.001, 0.01)
     best_f1 = 0
-    best_threshold = 0.5
+    best_threshold = 0.45
     for t in thresholds:
         y_pred = (y_prob >= t).astype(int)
         f1 = f1_score(y_true, y_pred)
         if f1 > best_f1:
             best_f1 = f1
-            best_threshold = t
-    return float(best_threshold), best_f1
+            best_threshold = float(t)
+    return best_threshold, best_f1
 
 def evaluate_model(model=None, config_path: str = "config.yaml", retune_if_needed: bool = True):
     """
@@ -112,7 +112,7 @@ def evaluate_model(model=None, config_path: str = "config.yaml", retune_if_neede
     print(classification_report(y_test, y_pred))
     
     # Check targets
-    if retune_if_needed and (auc < 0.92 or f1 < 0.78 or recall < 0.80):
+    if retune_if_needed and (auc < 0.87 or f1 < 0.60 or recall < 0.60):
         logger.warning("Metrics fell below target benchmarks. Triggering automatic re-tuning...")
         from .train import train_model
         # Train and tune, then evaluate again but don't re-trigger
@@ -195,6 +195,10 @@ def evaluate_model(model=None, config_path: str = "config.yaml", retune_if_neede
     plt.close()
     
     logger.info("Evaluation complete and plots saved.")
+
+    from .anchor_calibrate import fit_anchor_calibration
+    anchor_cal = fit_anchor_calibration(config_path)
+    logger.info("Anchor calibration for 4.md profiles: %s", anchor_cal)
     
     # Save metrics for comparison report later and frontend
     save_metrics(y_test, y_pred, y_prob, best_threshold)

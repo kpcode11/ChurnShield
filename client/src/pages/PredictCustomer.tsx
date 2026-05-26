@@ -286,6 +286,7 @@ export default function PredictCustomer() {
                 { value: "Mobile Phone", label: "Mobile Phone" },
                 { value: "Fashion", label: "Fashion" },
                 { value: "Grocery", label: "Grocery" },
+                { value: "Electronics", label: "Electronics" },
                 { value: "Others", label: "Others" },
               ]}
             />

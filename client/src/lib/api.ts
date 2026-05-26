@@ -221,6 +221,14 @@ export interface FeatureImportance {
   importance_pct: number;
 }
 
+export interface NaiveBaselineMetrics {
+  description: string;
+  accuracy: number;
+  auc_roc: number;
+  f1_churn: number;
+  recall: number;
+}
+
 export interface ModelPerformance {
   model_name: string;
   roc_auc: number;
@@ -228,11 +236,13 @@ export interface ModelPerformance {
   accuracy: number;
   precision: number;
   recall: number;
+  true_negatives?: number;
   false_positives: number;
   false_negatives: number;
+  true_positives?: number;
   total_test_samples: number;
-  training_time_seconds: number;
   threshold: number;
+  vs_naive_baseline?: NaiveBaselineMetrics | null;
 }
 
 export interface AnalyticsData {
@@ -247,6 +257,7 @@ export interface AnalyticsData {
   churn_by_category:        Record<string, number>;
   churn_by_payment_mode:    Record<string, number>;
   churn_by_subscription:    Record<string, number>;
+  churn_by_complain:        Record<string, number>;
   avg_days_since_last_order: { churned: number; stayed: number };
   churn_by_tenure:          Record<string, number>;
   kpi_comparison:           KpiComparison;

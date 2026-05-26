@@ -1,5 +1,5 @@
 evaluation:
-  optimal_threshold: 0.5899999999999997
+  optimal_threshold: 0.5200000000000001
 features:
   categorical:
   - PreferredLoginDevice
