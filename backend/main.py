@@ -185,11 +185,7 @@ app = FastAPI(
 )
 
 ALLOWED_ORIGINS = [
-    "http://localhost:8080",   # Vite dev server
-    "http://localhost:4173",   # Vite preview (vite preview)
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:4173",
-    "https://churn-shield-nine.vercel.app",  # Production Vercel Frontend
+    "*",  # Allow all origins (for ease of Vercel deployments, preview branches, etc)
 ]
 
 app.add_middleware(
