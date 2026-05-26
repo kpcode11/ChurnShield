@@ -189,6 +189,7 @@ ALLOWED_ORIGINS = [
     "http://localhost:4173",   # Vite preview (vite preview)
     "http://127.0.0.1:8080",
     "http://127.0.0.1:4173",
+    "https://churn-shield-nine.vercel.app",  # Production Vercel Frontend
 ]
 
 app.add_middleware(
