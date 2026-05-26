@@ -15,7 +15,7 @@ build/
 model/*.pkl
 
 # Data
-data/*.csv
+# data/*.csv
 
 # OS
 .DS_Store

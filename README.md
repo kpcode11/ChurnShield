@@ -4,7 +4,7 @@
 
 ---
 
-## 🏗️ System Architecture & Workflow
+## System Architecture & Workflow
 
 The ChurnShield ecosystem is divided into three distinct layers that communicate seamlessly:
 
@@ -66,7 +66,7 @@ The frontend is a **Single Page Application (SPA)** built with **React**, **Type
 
 ---
 
-## 🚀 How to Run the Project
+## How to Run the Project
 
 You will need **two terminals** to run the full application—one for the backend, and one for the frontend.
 
@@ -102,7 +102,7 @@ npm run dev
 
 ---
 
-## 🧠 Retraining the Model
+## Retraining the Model
 
 If you want to tweak hyperparameters or retrain the model from scratch, follow these steps from the project root:
 
@@ -123,7 +123,7 @@ If you want to tweak hyperparameters or retrain the model from scratch, follow t
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 ChurnShield/
