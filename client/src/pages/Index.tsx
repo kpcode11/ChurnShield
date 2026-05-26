@@ -58,9 +58,9 @@ const Index = () => {
   // Risk distribution derived from analytics totals
   const retained = analytics ? analytics.total_customers - analytics.churned_customers : 0;
   const liveRiskDist = [
-    { name: "Low Risk",    value: analytics ? Math.round(retained * 0.75) : 0, color: "hsl(160, 84%, 39%)" },
-    { name: "Medium Risk", value: analytics ? Math.round(retained * 0.25) : 0, color: "hsl(38, 92%, 50%)" },
-    { name: "High Risk",   value: analytics ? analytics.churned_customers : 0,  color: "hsl(0, 72%, 51%)" },
+    { name: "Low Risk",    value: analytics ? Math.round(retained * 0.75) : 0, color: "#00ed64" },
+    { name: "Medium Risk", value: analytics ? Math.round(retained * 0.25) : 0, color: "#ff8c00" },
+    { name: "High Risk",   value: analytics ? analytics.churned_customers : 0,  color: "#e11d48" },
   ];
 
   // Top churn drivers from analytics (satisfaction, city tier, device)
@@ -72,19 +72,29 @@ const Index = () => {
     : [];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Good morning, Admin</h1>
-        <p className="text-sm text-muted-foreground mt-1">Here's your business health snapshot for today</p>
+    <div className="space-y-8 pb-10">
+      {/* Header (Hero Band) */}
+      <div className="bg-[#001e2b] text-white -mx-4 sm:-mx-6 lg:-mx-8 -mt-6 sm:-mt-8 px-4 sm:px-6 lg:px-8 py-12 pb-20 rounded-b-[24px]">
+        <h1 className="text-5xl font-medium tracking-tight text-white leading-tight">One data platform. Unlimited AI potential.</h1>
+        <p className="text-xl text-[#a8b3bc] mt-4 font-normal">Good morning, Admin. Here's your business health snapshot for today.</p>
+        <div className="mt-8 flex gap-4">
+          <button className="bg-[#00ed64] hover:bg-[#00c553] text-[#001e2b] font-semibold py-[10px] px-[22px] rounded-full text-sm transition-colors">
+            Start Prediction
+          </button>
+          <button className="bg-transparent border border-white hover:border-[#00ed64] hover:text-[#00ed64] text-white font-semibold py-[10px] px-[22px] rounded-full text-sm transition-colors">
+            View Analytics
+          </button>
+        </div>
       </div>
 
-      {/* KPI Cards — Total Customers and Churned are live from /analytics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <KpiCard title="Total Customers"     value={totalCustomers}  change={churnRate} changeType="down" icon={Users} />
-        <KpiCard title="Total Churned"       value={totalChurned}                                         icon={UserMinus} variant="danger" />
-        <KpiCard title="High Risk Right Now" value={highRisk}       icon={AlertTriangle} variant="warning" />
-        <KpiCard title="Revenue At Risk"     value={revenueAtRisk}  icon={IndianRupee}   variant="danger" />
+      <div className="-mt-16 relative z-10 px-0">
+        {/* KPI Cards — Total Customers and Churned are live from /analytics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <KpiCard title="Total Customers"     value={totalCustomers}  change={churnRate} changeType="down" icon={Users} />
+          <KpiCard title="Total Churned"       value={totalChurned}                                         icon={UserMinus} variant="danger" />
+          <KpiCard title="High Risk Right Now" value={highRisk}       icon={AlertTriangle} variant="warning" />
+          <KpiCard title="Revenue At Risk"     value={revenueAtRisk}  icon={IndianRupee}   variant="danger" />
+        </div>
       </div>
 
       {/* Charts */}
@@ -101,15 +111,15 @@ const Index = () => {
             <AreaChart data={liveChurnTrend}>
               <defs>
                 <linearGradient id="churnGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(209, 53%, 23%)" stopOpacity={0.15} />
-                  <stop offset="100%" stopColor="hsl(209, 53%, 23%)" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#001e2b" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="#001e2b" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 93%)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(215, 16%, 47%)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(215, 16%, 47%)" }} unit="%" axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} unit="%" axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="rate" stroke="hsl(209, 53%, 23%)" strokeWidth={2.5} fill="url(#churnGrad)" dot={{ r: 3, fill: "hsl(209, 53%, 23%)", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(0,0%,100%)" }} />
+              <Area type="monotone" dataKey="rate" stroke="#001e2b" strokeWidth={2.5} fill="url(#churnGrad)" dot={{ r: 3, fill: "#001e2b", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 2, stroke: "#ffffff" }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -144,11 +154,11 @@ const Index = () => {
         <div className="p-6">
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={satisfactionData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis type="number" tick={{ fontSize: 11 }} unit="%" domain={[0, 60]} />
               <YAxis type="category" dataKey="score" tick={{ fontSize: 11 }} width={80} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn Rate"]} />
-              <Bar dataKey="rate" name="Churn %" fill="hsl(0, 72%, 51%)" radius={[0, 4, 4, 0]} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn Rate"]} contentStyle={{ borderRadius: "12px" }} />
+              <Bar dataKey="rate" name="Churn %" fill="#001e2b" radius={[4, 4, 4, 4]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

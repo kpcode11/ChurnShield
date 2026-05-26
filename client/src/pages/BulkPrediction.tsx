@@ -63,18 +63,19 @@ export default function BulkPrediction() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Bulk CSV Prediction</h1>
-        <p className="text-sm text-muted-foreground mt-1">Upload thousands of customers and get scored predictions</p>
-        <div className="mt-3 px-3 py-2 bg-success/10 border border-success/20 rounded-md">
-          <p className="text-xs text-success font-medium">
+    <div className="space-y-6 pb-10">
+      <div className="bg-[#001e2b] text-white -mx-6 lg:-mx-8 -mt-6 lg:-mt-8 px-6 lg:px-8 py-10 pb-16 rounded-b-[24px]">
+        <h1 className="text-4xl font-medium tracking-tight text-white mb-2">Bulk CSV Prediction</h1>
+        <p className="text-[#a8b3bc] mt-1 font-normal text-lg">Upload thousands of customers and get scored predictions</p>
+        <div className="mt-4 px-3 py-1.5 bg-[#00ed64]/10 border border-[#00ed64]/20 rounded-md inline-block">
+          <p className="text-xs text-[#00ed64] font-medium">
             ✓ Powered by XGBoost ML — 92.10% ROC-AUC, 8.8% error rate
           </p>
         </div>
       </div>
 
-      {/* Hidden real file input */}
+      <div className="-mt-12 relative z-10 px-0 space-y-6">
+        {/* Hidden real file input */}
       <input
         ref={inputRef}
         type="file"
@@ -140,6 +141,7 @@ export default function BulkPrediction() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

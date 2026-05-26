@@ -53,8 +53,8 @@ function formatFeature(name: string) {
 }
 
 const T = { fontSize: 11 };
-const CHURN_COLOR = "hsl(0, 72%, 51%)";
-const STAY_COLOR = "hsl(160, 84%, 39%)";
+const CHURN_COLOR = "hsl(var(--destructive))";
+const STAY_COLOR = "hsl(var(--primary))";
 
 const SUBSCRIPTION_ORDER = ["Free", "Silver", "Gold", "Platinum"];
 
@@ -66,7 +66,7 @@ function StatCard({ label, value, hint, accent }: {
 }) {
   const valueClass =
     accent === "danger" ? "text-destructive" :
-    accent === "success" ? "text-green-600" :
+    accent === "success" ? "text-primary" :
     "text-card-foreground";
   return (
     <div className="bg-card rounded-lg p-4 card-shadow">
@@ -93,9 +93,9 @@ function KpiInsight({
       <p className="text-sm font-semibold">
         <span className="text-destructive">{pair.churned}{unit}</span>
         <span className="text-muted-foreground text-xs mx-1">vs</span>
-        <span className="text-green-600">{pair.stayed}{unit}</span>
+        <span className="text-primary">{pair.stayed}{unit}</span>
       </p>
-      <p className={`text-xs mt-0.5 font-medium ${isRisk ? "text-destructive" : "text-green-600"}`}>
+      <p className={`text-xs mt-0.5 font-medium ${isRisk ? "text-destructive" : "text-primary"}`}>
         {diff > 0 ? "+" : ""}{diff.toFixed(1)}{unit} for churned
       </p>
     </div>
@@ -215,29 +215,19 @@ export default function Analytics() {
   const retained = data.total_customers - data.churned_customers;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-10">
 
       {/* Header */}
-      <div className="flex flex-wrap items-end gap-4 justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Analytics Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Production customers only (validation anchor rows excluded from aggregates)
-          </p>
-        </div>
-        {/* <Select value={cityFilter} onValueChange={setCityFilter}>
-          <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="City Tier" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Tiers</SelectItem>
-            <SelectItem value="1">Tier 1</SelectItem>
-            <SelectItem value="2">Tier 2</SelectItem>
-            <SelectItem value="3">Tier 3</SelectItem>
-          </SelectContent>
-        </Select> */}
+      <div className="bg-[#001e2b] text-white -mx-6 lg:-mx-8 -mt-6 lg:-mt-8 px-6 lg:px-8 py-10 pb-16 rounded-b-[24px]">
+        <h1 className="text-4xl font-medium tracking-tight text-white mb-2">Analytics Dashboard</h1>
+        <p className="text-[#a8b3bc] mt-1 font-normal text-lg">
+          Production customers only (validation anchor rows excluded from aggregates)
+        </p>
       </div>
 
-      {/* Overview KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="-mt-12 relative z-10 px-0">
+        {/* Overview KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Total customers" value={data.total_customers.toLocaleString()} />
         <StatCard label="Churned" value={data.churned_customers.toLocaleString()} accent="danger" />
         <StatCard
@@ -470,8 +460,8 @@ export default function Analytics() {
                 stroke={CHURN_COLOR}
                 strokeDasharray="4 3"
               />
-              <Line type="monotone" dataKey="churn_rate" name="Raw churn %" stroke="hsl(209,53%,70%)" strokeWidth={1} dot={false} strokeDasharray="3 2" />
-              <Line type="monotone" dataKey="rolling_rate" name={`${trends.rolling_window}-mo rolling`} stroke="hsl(209,53%,23%)" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="churn_rate" name="Raw churn %" stroke="#a8b3bc" strokeWidth={1} dot={false} strokeDasharray="3 2" />
+              <Line type="monotone" dataKey="rolling_rate" name={`${trends.rolling_window}-mo rolling`} stroke="#001e2b" strokeWidth={2.5} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -486,7 +476,7 @@ export default function Analytics() {
               <XAxis type="number" tick={T} unit="%" domain={[0, featureDomainMax]} />
               <YAxis type="category" dataKey="displayName" tick={{ fontSize: 10 }} width={130} />
               <Tooltip formatter={(v: number) => [`${v}%`, "Importance"]} />
-              <Bar dataKey="importance_pct" name="Importance %" fill="hsl(209,53%,40%)" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="importance_pct" name="Importance %" fill="#001e2b" radius={[4, 4, 4, 4]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -535,7 +525,7 @@ export default function Analytics() {
           {data.kpi_comparison.avg_complain_rate.stayed}% of stayed filed at least one complaint.
         </p>
       </ChartCard>
-
+      </div>
     </div>
   );
 }

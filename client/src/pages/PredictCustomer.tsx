@@ -219,20 +219,20 @@ export default function PredictCustomer() {
   const riskLevel = result?.risk_level ?? "Low";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Predict Single Customer</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+    <div className="space-y-6 pb-10">
+      <div className="bg-[#001e2b] text-white -mx-6 lg:-mx-8 -mt-6 lg:-mt-8 px-6 lg:px-8 py-10 pb-16 rounded-b-[24px]">
+        <h1 className="text-4xl font-medium tracking-tight text-white mb-2">Predict Single Customer</h1>
+        <p className="text-[#a8b3bc] mt-1 font-normal text-lg">
           All 28 model features — for the most accurate churn prediction
         </p>
-        <div className="mt-3 px-3 py-2 bg-success/10 border border-success/20 rounded-md inline-block">
-          <p className="text-xs text-success font-medium">
+        <div className="mt-4 px-3 py-1.5 bg-[#00ed64]/10 border border-[#00ed64]/20 rounded-md inline-block">
+          <p className="text-xs text-[#00ed64] font-medium">
             ✓ XGBoost — 92.10% ROC-AUC · 28 features · threshold 0.43
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 -mt-12 relative z-10 px-0">
 
         {/* ── Input Form ── */}
         <div className="bg-card rounded-lg p-6 card-shadow space-y-6 overflow-y-auto max-h-[80vh]">

@@ -1,58 +1,78 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+/* Fallback for Euclid Circular A if not locally installed */
+@font-face {
+  font-family: 'Euclid Circular A';
+  src: local('Euclid Circular A'), local('Inter');
+  font-weight: normal;
+  font-style: normal;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 220 20% 96%;
-    --foreground: 210 50% 18%;
+    /* Canvas White */
+    --background: 0 0% 100%;
+    /* Ink (Brand Teal Deep / Charcoal) #001e2b */
+    --foreground: 198 100% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 50% 18%;
+    --card-foreground: 198 100% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 50% 18%;
+    --popover-foreground: 198 100% 8%;
 
-    --primary: 209 53% 23%;
-    --primary-foreground: 0 0% 100%;
+    /* MongoDB Green #00ed64 / hsl(145, 100%, 46%) */
+    --primary: 145 100% 46%;
+    --primary-foreground: 198 100% 8%;
 
-    --secondary: 210 20% 93%;
-    --secondary-foreground: 209 53% 23%;
+    /* Brand Teal Deep */
+    --secondary: 198 100% 8%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 14% 90%;
+    /* Surface Soft / Muted */
+    --muted: 220 14% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 38 92% 50%;
+    /* Accent categories, e.g. purple/orange/blue, mapping Accent to MongoDB's Accent Orange */
+    --accent: 24 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 84% 39%;
-    --success-foreground: 0 0% 100%;
+    --success: 145 100% 46%;
+    --success-foreground: 198 100% 8%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 45 100% 50%;
+    --warning-foreground: 198 100% 8%;
 
+    /* Hairline */
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 209 53% 23%;
+    --ring: 145 100% 46%;
 
-    --radius: 0.625rem;
+    /* Rounded lg is 12px according to DESIGN.md */
+    --radius: 0.75rem;
 
-    --sidebar-background: 209 53% 23%;
-    --sidebar-foreground: 210 40% 92%;
-    --sidebar-primary: 38 92% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 209 50% 30%;
+    /* Sidebar - Brand Teal Deep */
+    --sidebar-background: 198 100% 8%;
+    /* On-Dark text */
+    --sidebar-foreground: 0 0% 100%;
+    /* Sidebar Brand Green */
+    --sidebar-primary: 145 100% 46%;
+    --sidebar-primary-foreground: 198 100% 8%;
+    --sidebar-accent: 198 100% 12%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 209 45% 30%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-border: 198 100% 14%;
+    --sidebar-ring: 145 100% 46%;
 
-    --chart-1: 209 53% 23%;
-    --chart-2: 38 92% 50%;
+    /* Charts */
+    --chart-1: 198 100% 8%;
+    --chart-2: 145 100% 46%;
     --chart-3: 160 84% 39%;
     --chart-4: 0 72% 51%;
     --chart-5: 270 60% 55%;
@@ -66,15 +86,16 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Euclid Circular A', 'Inter', system-ui, sans-serif;
   }
 }
 
 @layer utilities {
   .card-shadow {
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+    /* Elevation 0 or 2 from DESIGN.md */
+    box-shadow: 0 4px 12px 0 rgba(0, 30, 43, 0.08);
   }
   .card-shadow-hover {
-    box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+    box-shadow: 0 12px 24px -4px rgba(0, 30, 43, 0.12);
   }
 }
