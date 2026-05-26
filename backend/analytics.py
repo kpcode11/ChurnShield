@@ -2,11 +2,12 @@
 Module 3 — Analytics Engine
 
 Pandas aggregation and time-series processing for the Live Analytics Dashboard.
+Enhanced with Random Forest model insights and real feature importance data.
 
 All compute_* functions accept a pre-loaded DataFrame and return plain Python
 dicts / lists that FastAPI can serialise directly to JSON.
 
-Column reference (ecommerce_churn.csv):
+Column reference (E Commerce Dataset.xlsx, sheet "E Comm"):
   CustomerID, Churn, Tenure, PreferredLoginDevice, CityTier, WarehouseToHome,
   PreferredPaymentMode, Gender, HourSpendOnApp, NumberOfDeviceRegistered,
   PreferedOrderCat, SatisfactionScore, MaritalStatus, NumberOfAddress,
@@ -16,8 +17,11 @@ Column reference (ecommerce_churn.csv):
 
 from __future__ import annotations
 
+import json
 import math
+import os
 import pandas as pd
+import joblib
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -34,6 +38,13 @@ def _safe_round(value, ndigits: int = 2) -> float:
 def _safe_mean(series: pd.Series) -> float:
     """Return the mean of a series as a safe rounded float."""
     return _safe_round(series.dropna().mean())
+
+
+def _production_customers(df: pd.DataFrame) -> pd.DataFrame:
+    """Exclude synthetic validation anchor rows from dashboard aggregates."""
+    if "CustomerID" not in df.columns:
+        return df
+    return df[~df["CustomerID"].astype(str).str.startswith("ANCHOR_")]
 
 
 def _group_churn_rate(df: pd.DataFrame, col: str) -> dict[str, float]:
@@ -87,6 +98,8 @@ def compute_churn_by_group(df: pd.DataFrame) -> dict:
         "churn_by_marital_status": _group_churn_rate(df, "MaritalStatus"),
         "churn_by_category":       _group_churn_rate(df, "PreferedOrderCat"),
         "churn_by_payment_mode":   _group_churn_rate(df, "PreferredPaymentMode"),
+        "churn_by_subscription":   _group_churn_rate(df, "SubscriptionPlan"),
+        "churn_by_complain":       _group_churn_rate(df, "Complain"),
     }
 
 
@@ -141,11 +154,115 @@ def compute_kpi_comparison(df: pd.DataFrame) -> dict:
         "avg_warehouse_to_home": _pair("WarehouseToHome"),
         "avg_coupons_used":      _pair("CouponUsed"),
         "avg_num_devices":       _pair("NumberOfDeviceRegistered"),
+        "avg_total_spend":       _pair("TotalSpend"),
+        "avg_order_value":       _pair("AvgOrderValue"),
+        "avg_return_rate":       _pair("ReturnRate"),
+        "avg_customer_age":      _pair("CustomerAge"),
+        "avg_last_login_days":   _pair("LastLoginDaysAgo"),
+        "avg_reviews_given":     _pair("ReviewsGiven"),
+        "avg_wishlist_items":    _pair("WishlistItems"),
+        "avg_referrals_made":    _pair("ReferralsMade"),
+        "avg_support_tickets":   _pair("SupportTicketCount"),
         "avg_complain_rate": {
             # Complain is 0/1; express as a percentage of each group
             "churned": _safe_round(churned["Complain"].mean() * 100),
             "stayed":  _safe_round(stayed["Complain"].mean() * 100),
         },
+    }
+
+
+def compute_feature_importance() -> list[dict]:
+    """
+    Load the trained Random Forest model and extract real feature importances.
+    
+    Returns a sorted list of {feature, importance, importance_pct} dicts.
+    Falls back to empty list if model not found.
+    """
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_dir, "..", "models", "xgboost_churn.pkl")
+        encoder_path = os.path.join(base_dir, "..", "models", "encoders.pkl")
+        
+        if not os.path.exists(model_path):
+            return []
+        
+        model = joblib.load(model_path)
+        # XGBoost handles features slightly differently, we can get feature names from the model object
+        feature_names = model.feature_names_in_ if hasattr(model, 'feature_names_in_') else []
+        
+        if not hasattr(model, "feature_importances_"):
+            return []
+        
+        importances = model.feature_importances_
+        total = sum(importances)
+        
+        # Create sorted list of feature importance dicts
+        importance_data = [
+            {
+                "feature": str(name),
+                "importance": round(float(imp), 4),
+                "importance_pct": round(float(imp / total * 100), 2) if total > 0 else 0.0,
+            }
+            for name, imp in zip(feature_names, importances)
+        ]
+        
+        # Sort by importance descending
+        importance_data.sort(key=lambda x: x["importance"], reverse=True)
+        
+        return importance_data
+    
+    except Exception:
+        return []
+
+
+def compute_model_performance() -> dict:
+    """Load evaluation metrics from outputs/metrics.json (written by src.evaluate)."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    metrics_path = os.path.join(base_dir, "..", "outputs", "metrics.json")
+
+    fallback = {
+        "model_name": "XGBoost",
+        "roc_auc": 0.0,
+        "f1_score": 0.0,
+        "accuracy": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "total_test_samples": 0,
+        "threshold": 0.5,
+        "vs_naive_baseline": None,
+    }
+
+    if not os.path.exists(metrics_path):
+        return fallback
+
+    try:
+        with open(metrics_path, encoding="utf-8") as f:
+            m = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return fallback
+
+    cm = m.get("confusion_matrix", [[0, 0], [0, 0]])
+    tn = int(cm[0][0]) if len(cm) > 0 else 0
+    fp = int(cm[0][1]) if len(cm) > 0 and len(cm[0]) > 1 else 0
+    fn = int(cm[1][0]) if len(cm) > 1 else 0
+    tp = int(cm[1][1]) if len(cm) > 1 and len(cm[1]) > 1 else 0
+
+    return {
+        "model_name": m.get("model", "XGBoost"),
+        "roc_auc": float(m.get("auc_roc", 0)),
+        "f1_score": float(m.get("f1_churn", 0)),
+        "accuracy": float(m.get("accuracy", 0)),
+        "precision": float(m.get("precision", 0)),
+        "recall": float(m.get("recall", 0)),
+        "true_negatives": tn,
+        "false_positives": fp,
+        "false_negatives": fn,
+        "true_positives": tp,
+        "total_test_samples": int(m.get("test_size", 0)),
+        "threshold": float(m.get("threshold", 0.5)),
+        "vs_naive_baseline": m.get("vs_naive_baseline"),
     }
 
 
@@ -255,8 +372,10 @@ def build_analytics_response(df: pd.DataFrame) -> dict:
 
     Groups included:
       overview + 7 categorical breakdowns + tenure bands +
-      avg_days_since_last_order + kpi_comparison
+      avg_days_since_last_order + kpi_comparison + 
+      feature_importance + model_performance
     """
+    df = _production_customers(df)
     return {
         **compute_overview(df),
         **compute_churn_by_group(df),
@@ -266,9 +385,11 @@ def build_analytics_response(df: pd.DataFrame) -> dict:
             "stayed":  _safe_mean(df[df["Churn"] == 0]["DaySinceLastOrder"]),
         },
         "kpi_comparison": compute_kpi_comparison(df),
+        "feature_importance": compute_feature_importance(),
+        "model_performance": compute_model_performance(),
     }
 
 
 def build_trends_response(df: pd.DataFrame) -> dict:
     """Full GET /analytics/trends response payload."""
-    return compute_monthly_trend(df)
+    return compute_monthly_trend(_production_customers(df))

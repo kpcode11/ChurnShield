@@ -158,12 +158,14 @@ The dashboard will open automatically at `http://localhost:8501`.
 
 | Property | Value |
 |---|---|
-| Algorithm | XGBoost Classifier |
+| Algorithm | Imbalance-aware XGBoost Classifier |
 | Dataset | E-Commerce Customer Churn (Kaggle) |
 | Target | `Churn` (binary: 0 = retained, 1 = churned) |
 | Features | Tenure, purchase behaviour, satisfaction score, city tier, device, complaints, and more |
-| Preprocessing | Median imputation for numerics, mode imputation for categoricals, LabelEncoding |
-| Evaluation Metrics | Accuracy, Precision, Recall, F1-Score |
+| Preprocessing | Strict schema validation, median/mode imputation, LabelEncoding |
+| Evaluation Metrics | Fold-wise Stratified Cross-Validation (Accuracy, Precision, Recall, F1), plus Confusion Matrix on Holdout |
+| Threshold Tuning | Automatically optimized operating threshold using validation F1-score to maximize real-world performance |
+| Explainability | Top-10 Feature Importances reported after training |
 
 ---
 
