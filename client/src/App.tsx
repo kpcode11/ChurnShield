@@ -24,10 +24,10 @@ const App = () => (
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/predict" element={<PredictCustomer />} />
-            <Route path="/bulk" element={<BulkPrediction />} />
             <Route path="/analytics" element={<Analytics />} />
+            {/* <Route path="/bulk" element={<BulkPrediction />} />
             <Route path="/revenue" element={<RevenueImpact />} />
-            <Route path="/messages" element={<AIMessages />} />
+            <Route path="/messages" element={<AIMessages />} /> */}
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

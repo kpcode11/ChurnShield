@@ -26,13 +26,13 @@ import { Separator } from "@/components/ui/separator";
 const mainNav = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Predict", url: "/predict", icon: Search },
-  { title: "Bulk Upload", url: "/bulk", icon: FileUp },
+  // { title: "Bulk Upload", url: "/bulk", icon: FileUp },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
 ];
 
 const toolsNav = [
-  { title: "Revenue Impact", url: "/revenue", icon: DollarSign },
-  { title: "AI Messages", url: "/messages", icon: Mail },
+  // { title: "Revenue Impact", url: "/revenue", icon: DollarSign },
+  // { title: "AI Messages", url: "/messages", icon: Mail },
 ];
 
 function NavGroup({ label, items, collapsed }: { label: string; items: typeof mainNav; collapsed: boolean }) {
@@ -95,7 +95,9 @@ export function AppSidebar() {
 
       <SidebarContent className="px-1 pt-1 gap-1">
         <NavGroup label="Overview" items={mainNav} collapsed={collapsed} />
-        <NavGroup label="Tools" items={toolsNav} collapsed={collapsed} />
+        {toolsNav.length > 0 && (
+          <NavGroup label="Tools" items={toolsNav} collapsed={collapsed} />
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-2 mt-auto">
