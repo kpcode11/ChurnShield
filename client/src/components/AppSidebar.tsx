@@ -107,13 +107,13 @@ export function AppSidebar() {
 
         {!collapsed && (
           <div className="mx-2 mt-2 p-3 rounded-lg bg-sidebar-accent/40 flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold shrink-0">
+            {/* <div className="h-8 w-8 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold shrink-0">
               A
-            </div>
-            <div className="flex-1 min-w-0">
+            </div> */}
+            {/* <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-sidebar-foreground truncate">Admin User</p>
               <p className="text-[10px] text-sidebar-foreground/50 truncate">admin@company.com</p>
-            </div>
+            </div> */}
           </div>
         )}
       </SidebarFooter>
