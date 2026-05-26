@@ -64,7 +64,13 @@ function NumberField({
         type="number"
         min={min}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={e => {
+          let val = e.target.value;
+          // Strip minus signs to prevent negative numbers
+          if (val.includes("-")) val = val.replace(/-/g, "");
+          if (val !== "" && Number(val) < min) val = String(min);
+          onChange(val);
+        }}
         className="mt-1 h-8 text-sm"
       />
     </div>
@@ -164,6 +170,13 @@ export default function PredictCustomer() {
       ReferralsMade:               parseFloat(referralsMade) || 0,
       SupportTicketCount:          parseFloat(supportTicketCount) || 0,
     };
+
+    const hasNegative = Object.values(payload).some(v => typeof v === 'number' && v < 0);
+    if (hasNegative) {
+      setError("Input values cannot be negative.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const [pred, sug] = await Promise.all([
