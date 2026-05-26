@@ -225,7 +225,7 @@ export default function Analytics() {
             Production customers only (validation anchor rows excluded from aggregates)
           </p>
         </div>
-        <Select value={cityFilter} onValueChange={setCityFilter}>
+        {/* <Select value={cityFilter} onValueChange={setCityFilter}>
           <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="City Tier" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Tiers</SelectItem>
@@ -233,7 +233,7 @@ export default function Analytics() {
             <SelectItem value="2">Tier 2</SelectItem>
             <SelectItem value="3">Tier 3</SelectItem>
           </SelectContent>
-        </Select>
+        </Select> */}
       </div>
 
       {/* Overview KPIs */}

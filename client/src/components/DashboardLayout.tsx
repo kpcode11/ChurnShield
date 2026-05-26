@@ -31,17 +31,17 @@ export function DashboardLayout() {
             <h2 className="text-base font-semibold text-foreground hidden md:block">{title}</h2>
 
             <div className="ml-auto flex items-center gap-3">
-              <div className="relative hidden md:block">
+              {/* <div className="relative hidden md:block">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Search..."
                   className="pl-8 h-8 w-48 text-xs bg-muted/50 border-0 focus-visible:ring-1"
                 />
-              </div>
-              <button className="relative h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              </div> */}
+              {/* <button className="relative h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <Bell className="h-4 w-4" />
                 <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-destructive" />
-              </button>
+              </button> */}
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6 lg:p-8">
