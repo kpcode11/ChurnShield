@@ -30,7 +30,7 @@ function priorityPillVariant(priority: string): "danger" | "violet" | "soft" {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <p className="border-b border-[#ededed] pb-1 text-xs font-medium uppercase tracking-wide text-[#707070]">
+      <p className="border-b border-border pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {title}
       </p>
       {children}
@@ -46,8 +46,8 @@ function SliderField({
 }) {
   return (
     <div>
-      <Label className="text-xs text-[#707070]">
-        {label}: <span className="font-medium text-[#171717]">{value[0]}{unit}</span>
+      <Label className="text-xs text-muted-foreground">
+        {label}: <span className="font-medium text-foreground">{value[0]}{unit}</span>
       </Label>
       <Slider
         value={value}
@@ -68,7 +68,7 @@ function NumberField({
 }) {
   return (
     <div>
-      <Label className="text-xs text-[#707070]">{label}</Label>
+      <Label className="text-xs text-muted-foreground">{label}</Label>
       <Input
         type="number"
         min={min}
@@ -79,7 +79,7 @@ function NumberField({
           if (val !== "" && Number(val) < min) val = String(min);
           onChange(val);
         }}
-        className="mt-1 h-9 rounded-md border-[#dfdfdf] text-sm focus-visible:ring-[#3ecf8e]"
+        className="mt-1 h-9 rounded-md border-border bg-background text-sm focus-visible:ring-[#3ecf8e]"
       />
     </div>
   );
@@ -93,9 +93,9 @@ function SelectField({
 }) {
   return (
     <div>
-      <Label className="text-xs text-[#707070]">{label}</Label>
+      <Label className="text-xs text-muted-foreground">{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="mt-1 h-9 rounded-md border-[#dfdfdf] text-sm"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="mt-1 h-9 rounded-md border-border bg-background text-sm"><SelectValue /></SelectTrigger>
         <SelectContent>
           {options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>
@@ -239,7 +239,7 @@ export default function PredictCustomer() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SurfaceCard padding="md" className="max-h-[80vh] space-y-6 overflow-y-auto">
-          <h3 className="text-lg font-medium text-[#171717]">Customer details</h3>
+          <h3 className="text-lg font-medium text-foreground">Customer details</h3>
 
           <Section title="Account & lifecycle">
             <SliderField label="Tenure" value={tenure} onChange={setTenure} max={60} unit=" mo" />
@@ -340,7 +340,7 @@ export default function PredictCustomer() {
 
           <Section title="Satisfaction">
             <SliderField label="Satisfaction Score" value={satisfaction} onChange={setSatisfaction} min={1} max={5} />
-            <p className="-mt-1 text-xs text-[#9a9a9a]">1 = Very dissatisfied · 5 = Very satisfied</p>
+            <p className="-mt-1 text-xs text-muted-foreground/80">1 = Very dissatisfied · 5 = Very satisfied</p>
             <div className="grid grid-cols-2 gap-3">
               <NumberField label="Reviews Given" value={reviewsGiven} onChange={setReviewsGiven} />
               <NumberField label="Support Tickets" value={supportTicketCount} onChange={setSupportTicketCount} />
@@ -351,7 +351,7 @@ export default function PredictCustomer() {
                 complaint && "border border-[#e2005a]/25 bg-[#e2005a]/06",
               )}
             >
-              <Label className={cn("text-xs", complaint ? "text-[#e2005a] font-medium" : "text-[#707070]")}>
+              <Label className={cn("text-xs", complaint ? "font-medium text-[#e2005a]" : "text-muted-foreground")}>
                 Complaint filed?
               </Label>
               <Switch checked={complaint} onCheckedChange={setComplaint} />
@@ -382,8 +382,8 @@ export default function PredictCustomer() {
                 <p className="text-5xl font-medium tracking-[-0.02em]" style={{ color: riskColor }}>
                   {riskPct}%
                 </p>
-                <Progress value={riskPct} className={cn("mt-3 h-2.5 rounded-md bg-[#ededed]", progressClass)} />
-                <p className="mt-3 text-sm text-[#707070]">
+                <Progress value={riskPct} className={cn("mt-3 h-2.5 rounded-md bg-muted", progressClass)} />
+                <p className="mt-3 text-sm text-muted-foreground">
                   {(result.churn_probability * 100).toFixed(1)}% probability of churn
                   {result.prediction === 1
                     ? " — customer predicted to churn."
@@ -399,10 +399,10 @@ export default function PredictCustomer() {
                       key={tier.label}
                       className={cn(
                         "flex-1 rounded-md py-1 text-center text-[10px] font-medium uppercase tracking-wide",
-                        riskLevel === tier.label ? "text-[#171717]" : "text-[#b2b2b2]",
+                        riskLevel === tier.label ? "text-foreground" : "bg-muted text-muted-foreground/60",
                       )}
                       style={{
-                        backgroundColor: riskLevel === tier.label ? `${tier.color}30` : "#fafafa",
+                        backgroundColor: riskLevel === tier.label ? `${tier.color}30` : undefined,
                         borderBottom: riskLevel === tier.label ? `2px solid ${tier.color}` : "2px solid transparent",
                       }}
                     >
@@ -413,7 +413,7 @@ export default function PredictCustomer() {
               </SurfaceCard>
 
               <SurfaceCard padding="md">
-                <h4 className="mb-3 text-lg font-medium text-[#171717]">Risk signals detected</h4>
+                <h4 className="mb-3 text-lg font-medium text-foreground">Risk signals detected</h4>
                 <div className="space-y-2">
                   {riskFactors.map((f, i) => {
                     const isSafe = f.startsWith("No major");
@@ -429,7 +429,7 @@ export default function PredictCustomer() {
                           className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
                           style={{ backgroundColor: isSafe ? CHART.stayed : CHART.churned }}
                         />
-                        <span style={{ color: isSafe ? CHART.stayedDeep : "#171717" }}>{f}</span>
+                        <span className="text-foreground" style={{ color: isSafe ? CHART.stayedDeep : undefined }}>{f}</span>
                       </div>
                     );
                   })}
@@ -437,7 +437,7 @@ export default function PredictCustomer() {
               </SurfaceCard>
 
               <SurfaceCard padding="md" className="overflow-hidden">
-                <h4 className="mb-3 text-lg font-medium text-[#171717]">Features sent to model</h4>
+                <h4 className="mb-3 text-lg font-medium text-foreground">Features sent to model</h4>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-0 text-xs">
                   {[
                     ["Tenure",        `${tenure[0]} mo`],
@@ -472,14 +472,14 @@ export default function PredictCustomer() {
                     <div
                       key={k}
                       className={cn(
-                        "flex justify-between border-b border-[#ededed] py-1.5",
-                        i % 2 === 1 && "bg-[#fafafa]",
+                        "flex justify-between border-b border-border py-1.5",
+                        i % 2 === 1 && "bg-muted/50",
                       )}
                     >
-                      <span className="text-[#707070]">{k}</span>
+                      <span className="text-muted-foreground">{k}</span>
                       <span
-                        className="font-medium"
-                        style={{ color: featureValueColor(k, String(v)) ?? "#171717" }}
+                        className="font-medium text-foreground"
+                        style={{ color: featureValueColor(k, String(v)) }}
                       >
                         {v}
                       </span>
@@ -510,12 +510,12 @@ export default function PredictCustomer() {
                       CHART.stayed,
                   }}
                 >
-                  <h4 className="text-lg font-medium text-[#171717]">Recommended action</h4>
+                  <h4 className="text-lg font-medium text-foreground">Recommended action</h4>
                   <PillTag variant={priorityPillVariant(suggestion.priority)} className="mt-2">
                     {suggestion.priority} priority · {suggestion.action_type}
                   </PillTag>
-                  <p className="mt-3 text-sm text-[#707070]">→ {suggestion.suggestion}</p>
-                  <p className="mt-1 text-xs italic text-[#9a9a9a]">{suggestion.reason}</p>
+                  <p className="mt-3 text-sm text-muted-foreground">→ {suggestion.suggestion}</p>
+                  <p className="mt-1 text-xs italic text-muted-foreground/80">{suggestion.reason}</p>
                 </SurfaceCard>
               )}
             </>
@@ -527,7 +527,7 @@ export default function PredictCustomer() {
               >
                 <span className="text-2xl font-medium" style={{ color: CHART.stayedDeep }}>%</span>
               </div>
-              <p className="max-w-xs text-center text-sm text-[#707070]">
+              <p className="max-w-xs text-center text-sm text-muted-foreground">
                 {loading
                   ? "Running prediction across all 28 features…"
                   : "Fill in the customer details and click Predict churn"}

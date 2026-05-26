@@ -9,14 +9,15 @@ import {
   fetchAnalytics, fetchAnalyticsTrends,
   type AnalyticsData, type TrendsData, type KpiPair,
 } from "@/lib/api";
-import { SB } from "@/lib/supabaze";
 import {
   CHART,
   chartCategoryColor,
   chartChurnRateColor,
-  chartTick,
-  chartTooltipStyle,
+  useChartTheme,
 } from "@/lib/chart-colors";
+
+/** Matches backend/analytics.py tenure bins — must not sort lexicographically */
+const TENURE_BAND_ORDER = ["0-6", "7-12", "13-18", "19-24", "25-36", "37-48", "49-60", "60+"] as const;
 
 function toBarData(rec: Record<string, number>, keyProp: string, labelMap?: Record<string, string>) {
   return Object.entries(rec)
@@ -32,6 +33,14 @@ function toBarData(rec: Record<string, number>, keyProp: string, labelMap?: Reco
     });
 }
 
+function toTenureBarData(rec: Record<string, number>) {
+  return TENURE_BAND_ORDER.filter((band) => band in rec).map((band) => ({
+    band,
+    rate: rec[band],
+    rawKey: band,
+  }));
+}
+
 function churnRateDomain(data: { rate: number }[]): [number, number] {
   if (!data.length) return [0, 40];
   const max = Math.max(...data.map(d => d.rate), 1);
@@ -42,7 +51,6 @@ function formatFeature(name: string) {
   return name.replace(/([A-Z])/g, " $1").trim();
 }
 
-const T = chartTick;
 const CHURN_COLOR = CHART.churned;
 const STAY_COLOR = CHART.stayed;
 
@@ -58,15 +66,19 @@ function StatCard({ label, value, hint, accent }: {
     accent === "danger" ? CHART.churned :
     accent === "success" ? CHART.stayed :
     undefined;
-  const valueColor = accentBorder ?? SB.ink;
   return (
     <div
-      className="rounded-xl border border-[#dfdfdf] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+      className="rounded-xl border border-border bg-card p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
       style={accentBorder ? { borderLeftWidth: 4, borderLeftColor: accentBorder } : undefined}
     >
-      <p className="text-[13px] text-[#707070]">{label}</p>
-      <p className="mt-1 text-2xl font-medium tracking-[-0.02em]" style={{ color: valueColor }}>{value}</p>
-      {hint && <p className="mt-1 text-xs text-[#9a9a9a]">{hint}</p>}
+      <p className="text-[13px] text-muted-foreground">{label}</p>
+      <p
+        className="mt-1 text-2xl font-medium tracking-[-0.02em] text-foreground"
+        style={accentBorder ? { color: accentBorder } : undefined}
+      >
+        {value}
+      </p>
+      {hint && <p className="mt-1 text-xs text-muted-foreground/80">{hint}</p>}
     </div>
   );
 }
@@ -82,14 +94,14 @@ function KpiInsight({
   const diff = pair.churned - pair.stayed;
   const isRisk = churnedHigherIsRisk ? diff > 0 : diff < 0;
   return (
-    <div className="rounded-md border border-[#ededed] bg-[#fafafa] px-3 py-2 text-center">
-      <p className="text-xs text-[#707070] mb-1">{label}</p>
+    <div className="rounded-md border border-border bg-muted px-3 py-2 text-center">
+      <p className="mb-1 text-xs text-muted-foreground">{label}</p>
       <p className="text-sm font-medium">
         <span style={{ color: CHART.churned }}>{pair.churned}{unit}</span>
         <span className="text-[#9a9a9a] text-xs mx-1">vs</span>
         <span style={{ color: CHART.stayed }}>{pair.stayed}{unit}</span>
       </p>
-      <p className={`text-xs mt-0.5 font-medium ${isRisk ? "text-[#e2005a]" : "text-[#707070]"}`}>
+      <p className={`mt-0.5 text-xs font-medium ${isRisk ? "text-[#e2005a]" : "text-muted-foreground"}`}>
         {diff > 0 ? "+" : ""}{diff.toFixed(1)}{unit} for churned
       </p>
     </div>
@@ -97,6 +109,7 @@ function KpiInsight({
 }
 
 export default function Analytics() {
+  const chartTheme = useChartTheme();
   const [cityFilter, setCityFilter] = useState("all");
   const [data, setData]       = useState<AnalyticsData | null>(null);
   const [trends, setTrends]   = useState<TrendsData | null>(null);
@@ -173,6 +186,15 @@ export default function Analytics() {
     [satisfactionBars],
   );
 
+  const tenureBandData = useMemo(
+    () => (data ? toTenureBarData(data.churn_by_tenure) : []),
+    [data],
+  );
+  const tenureBandRates = useMemo(
+    () => tenureBandData.map(d => d.rate),
+    [tenureBandData],
+  );
+
   const engagementKpis = useMemo(() => {
     if (!data) return [];
     const k = data.kpi_comparison;
@@ -199,7 +221,7 @@ export default function Analytics() {
   if (loading) {
     return (
       <div className="mx-auto flex h-64 max-w-[1280px] items-center justify-center">
-        <p className="text-sm text-[#707070] animate-pulse">Loading analytics…</p>
+        <p className="animate-pulse text-sm text-muted-foreground">Loading analytics…</p>
       </div>
     );
   }
@@ -258,45 +280,45 @@ export default function Analytics() {
             ].map(({ label, value }, i) => (
               <div
                 key={label}
-                className="rounded-md border border-[#ededed] bg-[#fafafa] px-3 py-2 text-center"
+                className="rounded-md border border-border bg-muted px-3 py-2 text-center"
                 style={{ borderTopColor: chartCategoryColor(i), borderTopWidth: 3 }}
               >
-                <p className="text-xs text-[#707070]">{label}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
                 <p className="text-lg font-medium" style={{ color: chartCategoryColor(i) }}>{value}</p>
               </div>
             ))}
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="rounded-md border border-[#dfdfdf] p-4">
-              <p className="mb-2 text-xs font-medium text-[#707070]">Confusion matrix (test)</p>
+            <div className="rounded-md border border-border p-4">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Confusion matrix (test)</p>
               <div className="mx-auto grid max-w-xs grid-cols-3 gap-1 text-center text-xs">
                 <div />
-                <div className="py-1 font-medium text-[#707070]">Pred stay</div>
-                <div className="py-1 font-medium text-[#707070]">Pred churn</div>
-                <div className="py-2 font-medium text-[#707070]">Actual stay</div>
-                <div className="rounded p-2 font-medium text-[#171717]" style={{ backgroundColor: `${CHART.stayed}33` }}>
+                <div className="py-1 font-medium text-muted-foreground">Pred stay</div>
+                <div className="py-1 font-medium text-muted-foreground">Pred churn</div>
+                <div className="py-2 font-medium text-muted-foreground">Actual stay</div>
+                <div className="rounded p-2 font-medium text-foreground" style={{ backgroundColor: `${CHART.stayed}33` }}>
                   {mp.true_negatives ?? "—"}
                 </div>
-                <div className="rounded p-2 font-medium text-[#171717]" style={{ backgroundColor: `${CHART.peakLine}18` }}>
+                <div className="rounded p-2 font-medium text-foreground" style={{ backgroundColor: `${CHART.peakLine}18` }}>
                   {mp.false_positives}
                 </div>
-                <div className="py-2 font-medium text-[#707070]">Actual churn</div>
-                <div className="rounded p-2 font-medium text-[#171717]" style={{ backgroundColor: `${CHART.peakLine}18` }}>
+                <div className="py-2 font-medium text-muted-foreground">Actual churn</div>
+                <div className="rounded p-2 font-medium text-foreground" style={{ backgroundColor: `${CHART.peakLine}18` }}>
                   {mp.false_negatives}
                 </div>
-                <div className="rounded p-2 font-medium text-[#171717]" style={{ backgroundColor: `${CHART.stayed}33` }}>
+                <div className="rounded p-2 font-medium text-foreground" style={{ backgroundColor: `${CHART.stayed}33` }}>
                   {mp.true_positives ?? "—"}
                 </div>
               </div>
-              <p className="mt-2 text-center text-xs text-[#9a9a9a]">
+              <p className="mt-2 text-center text-xs text-muted-foreground/80">
                 FP = stayed but flagged churn · FN = churned but missed
               </p>
             </div>
             {mp.vs_naive_baseline && (
-              <div className="rounded-md border border-[#dfdfdf] p-4">
-                <p className="mb-2 text-xs font-medium text-[#707070]">vs naive baseline</p>
-                <p className="mb-2 text-xs text-[#9a9a9a]">{mp.vs_naive_baseline.description}</p>
-                <ul className="space-y-1 text-sm text-[#171717]">
+              <div className="rounded-md border border-border p-4">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">vs naive baseline</p>
+                <p className="mb-2 text-xs text-muted-foreground/80">{mp.vs_naive_baseline.description}</p>
+                <ul className="space-y-1 text-sm text-foreground">
                   <li>Baseline accuracy: <strong>{(mp.vs_naive_baseline.accuracy * 100).toFixed(1)}%</strong></li>
                   <li>Model accuracy: <strong>{(mp.accuracy * 100).toFixed(1)}%</strong></li>
                   <li>Baseline F1 (churn): <strong>{(mp.vs_naive_baseline.f1_churn * 100).toFixed(1)}%</strong></li>
@@ -312,10 +334,10 @@ export default function Analytics() {
         <ChartPanel title="Churn by satisfaction score" subtitle="1 = very dissatisfied · 5 = very satisfied · greener = lower churn">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={satisfactionBars}>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis dataKey="score" tick={T} label={{ value: "Score", position: "insideBottom", offset: -2, fontSize: 10, fill: SB.inkMute }} />
-              <YAxis tick={T} unit="%" domain={churnRateDomain(satisfactionBars)} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="score" tick={chartTheme.tick} label={{ value: "Score", position: "insideBottom", offset: -2, fontSize: 10, fill: chartTheme.tick.fill }} />
+              <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(satisfactionBars)} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" name="Churn %" radius={[4, 4, 0, 0]}>
                 {satisfactionBars.map((entry, i) => (
                   <Cell key={i} fill={chartChurnRateColor(entry.rate, satisfactionRates)} />
@@ -328,10 +350,10 @@ export default function Analytics() {
         <ChartPanel title="Churn by subscription plan" subtitle="Free → Platinum commitment ladder">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={subscriptionData} layout="vertical" margin={{ left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis type="number" tick={T} unit="%" domain={churnRateDomain(subscriptionData.map(d => ({ rate: d.rate })))} />
-              <YAxis type="category" dataKey="plan" tick={{ fontSize: 10, fill: SB.inkMute }} width={72} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis type="number" tick={chartTheme.tick} unit="%" domain={churnRateDomain(subscriptionData.map(d => ({ rate: d.rate })))} />
+              <YAxis type="category" dataKey="plan" tick={{ fontSize: 10, fill: chartTheme.tick.fill }} width={72} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" name="Churn %" radius={[0, 4, 4, 0]}>
                 {subscriptionData.map((_, i) => (
                   <Cell key={i} fill={CHART.subscription[i % CHART.subscription.length]} />
@@ -344,10 +366,10 @@ export default function Analytics() {
         <ChartPanel title="Complaint filed vs not" subtitle="Customers who filed a complaint">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={complainData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: SB.inkMute }} />
-              <YAxis tick={T} unit="%" domain={churnRateDomain(complainData.map(d => ({ rate: d.rate })))} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: chartTheme.tick.fill }} />
+              <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(complainData.map(d => ({ rate: d.rate })))} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" name="Churn %" radius={[4, 4, 0, 0]}>
                 <Cell fill={CHART.stayed} />
                 <Cell fill={CHART.churned} />
@@ -361,7 +383,7 @@ export default function Analytics() {
         <ChartPanel title="Churn by city tier" padding="md">
           <div className="mb-3 flex justify-end">
             <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger className="h-8 w-[120px] rounded-md border-[#dfdfdf] text-xs">
+              <SelectTrigger className="h-8 w-[120px] rounded-md border-border text-xs">
                 <SelectValue placeholder="All tiers" />
               </SelectTrigger>
               <SelectContent>
@@ -374,10 +396,10 @@ export default function Analytics() {
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={cityData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis dataKey="tier" tick={T} />
-              <YAxis tick={T} unit="%" domain={churnRateDomain(cityData)} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="tier" tick={chartTheme.tick} />
+              <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(cityData)} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
                 {cityData.map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -390,10 +412,10 @@ export default function Analytics() {
         <ChartPanel title="Churn by gender" padding="md">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={toBarData(data.churn_by_gender, "gender")}>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis dataKey="gender" tick={T} />
-              <YAxis tick={T} unit="%" domain={churnRateDomain(toBarData(data.churn_by_gender, "gender"))} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="gender" tick={chartTheme.tick} />
+              <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(toBarData(data.churn_by_gender, "gender"))} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
                 {toBarData(data.churn_by_gender, "gender").map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -406,10 +428,10 @@ export default function Analytics() {
         <ChartPanel title="Churn by payment mode" padding="md">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={toBarData(data.churn_by_payment_mode, "mode")} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis type="number" tick={T} unit="%" domain={churnRateDomain(toBarData(data.churn_by_payment_mode, "mode"))} />
-              <YAxis type="category" dataKey="mode" tick={{ fontSize: 9, fill: SB.inkMute }} width={88} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis type="number" tick={chartTheme.tick} unit="%" domain={churnRateDomain(toBarData(data.churn_by_payment_mode, "mode"))} />
+              <YAxis type="category" dataKey="mode" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} width={88} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
                 {toBarData(data.churn_by_payment_mode, "mode").map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -422,10 +444,10 @@ export default function Analytics() {
         <ChartPanel title="Churn by login device" padding="md">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={toBarData(data.churn_by_device, "device")} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis type="number" tick={T} unit="%" domain={churnRateDomain(toBarData(data.churn_by_device, "device"))} />
-              <YAxis type="category" dataKey="device" tick={{ fontSize: 9, fill: SB.inkMute }} width={88} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis type="number" tick={chartTheme.tick} unit="%" domain={churnRateDomain(toBarData(data.churn_by_device, "device"))} />
+              <YAxis type="category" dataKey="device" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} width={88} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
                 {toBarData(data.churn_by_device, "device").map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -439,19 +461,16 @@ export default function Analytics() {
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <ChartPanel title="Churn by tenure band" subtitle="Months on platform">
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={toBarData(data.churn_by_tenure, "band")}>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis dataKey="band" tick={{ fontSize: 9, fill: SB.inkMute }} />
-              <YAxis tick={T} unit="%" domain={churnRateDomain(toBarData(data.churn_by_tenure, "band"))} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTooltipStyle} />
+            <BarChart data={tenureBandData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="band" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} />
+              <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(tenureBandData)} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
-                {toBarData(data.churn_by_tenure, "band").map((entry, i) => (
+                {tenureBandData.map((entry, i) => (
                   <Cell
-                    key={i}
-                    fill={chartChurnRateColor(
-                      entry.rate,
-                      toBarData(data.churn_by_tenure, "band").map(d => d.rate),
-                    )}
+                    key={entry.rawKey}
+                    fill={chartChurnRateColor(entry.rate, tenureBandRates)}
                   />
                 ))}
               </Bar>
@@ -462,10 +481,10 @@ export default function Analytics() {
         <ChartPanel title="Churn by order category">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={toBarData(data.churn_by_category, "category")} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis type="number" tick={T} unit="%" domain={churnRateDomain(toBarData(data.churn_by_category, "category"))} />
-              <YAxis type="category" dataKey="category" tick={{ fontSize: 9, fill: SB.inkMute }} width={100} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis type="number" tick={chartTheme.tick} unit="%" domain={churnRateDomain(toBarData(data.churn_by_category, "category"))} />
+              <YAxis type="category" dataKey="category" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} width={100} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
                 {toBarData(data.churn_by_category, "category").map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -483,13 +502,13 @@ export default function Analytics() {
         >
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={trends.monthly_trend} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis dataKey="month" tick={T} label={{ value: "Tenure (months)", position: "insideBottom", offset: -2, fontSize: 10, fill: SB.inkMute }} />
-              <YAxis tick={T} unit="%" domain={[0, "auto"]} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="month" tick={chartTheme.tick} label={{ value: "Tenure (months)", position: "insideBottom", offset: -2, fontSize: 10, fill: chartTheme.tick.fill }} />
+              <YAxis tick={chartTheme.tick} unit="%" domain={[0, "auto"]} />
               <Tooltip
                 formatter={(v: number, name: string) => [`${v.toFixed(1)}%`, name]}
                 labelFormatter={(l: number) => `Month ${l}`}
-                contentStyle={chartTooltipStyle}
+                contentStyle={chartTheme.tooltip}
               />
               <Legend verticalAlign="top" height={28} iconType="line" wrapperStyle={{ fontSize: 11 }} />
               <ReferenceArea
@@ -499,7 +518,7 @@ export default function Analytics() {
                 fillOpacity={0.12}
               />
               <ReferenceLine x={trends.peak_churn_month.month} stroke={CHART.peakLine} strokeWidth={2} strokeDasharray="4 3" />
-              <Line type="monotone" dataKey="churn_rate" name="Raw churn %" stroke={CHART.rawLine} strokeWidth={1.5} dot={false} strokeDasharray="4 3" />
+              <Line type="monotone" dataKey="churn_rate" name="Raw churn %" stroke={chartTheme.rawLine} strokeWidth={1.5} dot={false} strokeDasharray="4 3" />
               <Line type="monotone" dataKey="rolling_rate" name={`${trends.rolling_window}-mo rolling`} stroke={CHART.rollingLine} strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: CHART.stayed }} />
             </LineChart>
           </ResponsiveContainer>
@@ -510,10 +529,10 @@ export default function Analytics() {
         <ChartPanel title="Top 10 feature importances" subtitle="XGBoost gain on the current dataset">
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={featureChartData} layout="vertical" margin={{ left: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis type="number" tick={T} unit="%" domain={[0, featureDomainMax]} />
-              <YAxis type="category" dataKey="displayName" tick={{ fontSize: 10, fill: SB.inkMute }} width={130} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Importance"]} contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis type="number" tick={chartTheme.tick} unit="%" domain={[0, featureDomainMax]} />
+              <YAxis type="category" dataKey="displayName" tick={{ fontSize: 10, fill: chartTheme.tick.fill }} width={130} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Importance"]} contentStyle={chartTheme.tooltip} />
               <Bar dataKey="importance_pct" name="Importance %" radius={[4, 4, 4, 4]}>
                 {featureChartData.map((_, i) => (
                   <Cell key={i} fill={CHART.importance[i % CHART.importance.length]} />
@@ -528,10 +547,10 @@ export default function Analytics() {
         <ChartPanel title="Engagement KPIs — churned vs stayed" subtitle="Mean per group">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={engagementKpis} barCategoryGap="20%">
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis dataKey="metric" tick={{ fontSize: 9, fill: SB.inkMute }} />
-              <YAxis tick={T} />
-              <Tooltip contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="metric" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} />
+              <YAxis tick={chartTheme.tick} />
+              <Tooltip contentStyle={chartTheme.tooltip} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="churned" name="Churned" fill={CHURN_COLOR} radius={[3, 3, 0, 0]} />
               <Bar dataKey="stayed" name="Stayed" fill={STAY_COLOR} radius={[3, 3, 0, 0]} />
@@ -542,10 +561,10 @@ export default function Analytics() {
         <ChartPanel title="Financial KPIs — churned vs stayed" subtitle="Mean per group">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={financialKpis} barCategoryGap="20%">
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-              <XAxis dataKey="metric" tick={{ fontSize: 9, fill: SB.inkMute }} />
-              <YAxis tick={T} />
-              <Tooltip contentStyle={chartTooltipStyle} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="metric" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} />
+              <YAxis tick={chartTheme.tick} />
+              <Tooltip contentStyle={chartTheme.tooltip} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="churned" name="Churned" fill={CHURN_COLOR} radius={[3, 3, 0, 0]} />
               <Bar dataKey="stayed" name="Stayed" fill={STAY_COLOR} radius={[3, 3, 0, 0]} />
@@ -561,7 +580,7 @@ export default function Analytics() {
           <KpiInsight label="Support tickets" pair={data.kpi_comparison.avg_support_tickets} unit="" churnedHigherIsRisk />
           <KpiInsight label="Satisfaction proxy" pair={data.kpi_comparison.avg_app_hours} unit="h" churnedHigherIsRisk={false} />
         </div>
-        <p className="mt-4 text-xs text-[#707070]">
+        <p className="mt-4 text-xs text-muted-foreground">
           Complaint rate: {data.kpi_comparison.avg_complain_rate.churned}% of churned vs{" "}
           {data.kpi_comparison.avg_complain_rate.stayed}% of stayed filed at least one complaint.
         </p>

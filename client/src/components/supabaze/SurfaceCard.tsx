@@ -19,10 +19,10 @@ export function SurfaceCard({ children, className, padding = "lg", dark = false,
     <div
       style={style}
       className={cn(
-        "rounded-xl border shadow-[0_1px_3px_rgba(0,0,0,0.06)]",
+        "rounded-xl border shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.35)]",
         dark
-          ? "border-[#202020] bg-[#1c1c1c] text-white"
-          : "border-[#dfdfdf] bg-white text-[#171717]",
+          ? "border-[#202020] bg-[#141414] text-white"
+          : "border-border bg-card text-card-foreground",
         paddingMap[padding],
         className,
       )}

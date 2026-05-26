@@ -9,10 +9,8 @@ import {
   CHART,
   RISK,
   chartChurnRateColor,
-  chartTick,
-  chartTooltipStyle,
+  useChartTheme,
 } from "@/lib/chart-colors";
-import { SB } from "@/lib/supabaze";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -20,21 +18,10 @@ import {
   BarChart, Bar,
 } from "recharts";
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-md border border-[#dfdfdf] bg-white px-3 py-2 text-xs shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-        <p className="font-medium text-[#171717]">{label}</p>
-        <p className="mt-0.5 font-medium" style={{ color: CHART.rollingLine }}>{payload[0].value}%</p>
-      </div>
-    );
-  }
-  return null;
-};
-
 const Index = () => {
+  const chartTheme = useChartTheme();
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  const [trends, setTrends]       = useState<TrendsData | null>(null);
+  const [trends, setTrends] = useState<TrendsData | null>(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -76,6 +63,25 @@ const Index = () => {
     [satisfactionData],
   );
 
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div
+          className="rounded-md border px-3 py-2 text-xs shadow-sm"
+          style={{
+            backgroundColor: chartTheme.tooltip.backgroundColor,
+            borderColor: chartTheme.tooltip.border?.toString().replace("1px solid ", "") ?? undefined,
+            color: chartTheme.tooltip.color,
+          }}
+        >
+          <p className="font-medium">{label}</p>
+          <p className="mt-0.5 font-medium" style={{ color: CHART.rollingLine }}>{payload[0].value}%</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="mx-auto max-w-[1280px] space-y-8 pb-10">
       <PageHero
@@ -111,9 +117,9 @@ const Index = () => {
                   <stop offset="100%" stopColor={CHART.stayed} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} vertical={false} />
-              <XAxis dataKey="month" tick={chartTick} axisLine={false} tickLine={false} />
-              <YAxis tick={chartTick} unit="%" axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} vertical={false} />
+              <XAxis dataKey="month" tick={chartTheme.tick} axisLine={false} tickLine={false} />
+              <YAxis tick={chartTheme.tick} unit="%" axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
@@ -122,7 +128,7 @@ const Index = () => {
                 strokeWidth={2.5}
                 fill="url(#indexChurnGrad)"
                 dot={{ r: 3, fill: CHART.stayedDeep, strokeWidth: 0 }}
-                activeDot={{ r: 5, fill: CHART.stayed, stroke: SB.canvas, strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: CHART.stayed, stroke: chartTheme.activeDotStroke, strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -144,7 +150,7 @@ const Index = () => {
                 paddingAngle={3}
                 dataKey="value"
                 strokeWidth={2}
-                stroke={SB.canvas}
+                stroke={chartTheme.activeDotStroke}
               >
                 {liveRiskDist.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
@@ -153,14 +159,16 @@ const Index = () => {
               <Legend
                 iconType="circle"
                 iconSize={8}
-                formatter={(value: string) => <span className="ml-1 text-xs text-[#707070]">{value}</span>}
+                formatter={(value: string) => (
+                  <span className="ml-1 text-xs text-muted-foreground">{value}</span>
+                )}
               />
-              <Tooltip contentStyle={chartTooltipStyle} />
+              <Tooltip contentStyle={chartTheme.tooltip} />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             {liveRiskDist.map((seg) => (
-              <span key={seg.name} className="inline-flex items-center gap-1.5 text-xs text-[#707070]">
+              <span key={seg.name} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: seg.color }} />
                 {seg.name}
               </span>
@@ -175,10 +183,10 @@ const Index = () => {
       >
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={satisfactionData} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke={SB.hairlineCool} />
-            <XAxis type="number" tick={chartTick} unit="%" domain={[0, 60]} />
-            <YAxis type="category" dataKey="score" tick={chartTick} width={80} />
-            <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTooltipStyle} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+            <XAxis type="number" tick={chartTheme.tick} unit="%" domain={[0, 60]} />
+            <YAxis type="category" dataKey="score" tick={chartTheme.tick} width={80} />
+            <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} />
             <Bar dataKey="rate" name="Churn %" radius={[4, 4, 4, 4]}>
               {satisfactionData.map((entry, i) => (
                 <Cell key={i} fill={chartChurnRateColor(entry.rate, satisfactionRates)} />

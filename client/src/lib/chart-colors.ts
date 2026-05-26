@@ -1,6 +1,9 @@
+import { useMemo } from "react";
+import { useTheme } from "@/components/ThemeProvider";
+import type { ResolvedTheme } from "@/components/ThemeProvider";
 import { SB } from "./supabaze";
 
-/** Supabaze chart palette — accents reserved for data viz per DESIGN.md */
+/** Supabaze chart palette — accents work on light and dark */
 export const CHART = {
   churned: SB.accentCrimson,
   stayed: SB.primary,
@@ -10,7 +13,6 @@ export const CHART = {
   rawLine: SB.inkMute2,
   rollingLine: SB.primaryDeep,
   peakLine: SB.accentCrimson,
-  /** Distinct hues for categorical breakdowns */
   category: [
     SB.primary,
     "#644fc1",
@@ -21,7 +23,6 @@ export const CHART = {
     SB.accentCrimson,
     "#ffdb13",
   ] as const,
-  /** Low → high churn rate */
   churnScale: [
     SB.primary,
     SB.primarySoft,
@@ -29,9 +30,7 @@ export const CHART = {
     "#6b01c2",
     SB.accentCrimson,
   ] as const,
-  /** Subscription ladder (Free → Platinum) */
   subscription: ["#9a9a9a", SB.primarySoft, "#644fc1", SB.accentCrimson] as const,
-  /** Feature importance rank (top → bottom) */
   importance: [
     SB.primaryDeep,
     SB.primary,
@@ -44,6 +43,12 @@ export const CHART = {
     "#b2b2b2",
     "#dfdfdf",
   ] as const,
+} as const;
+
+export const RISK = {
+  low: CHART.stayed,
+  medium: "#644fc1",
+  high: CHART.churned,
 } as const;
 
 export function chartCategoryColor(index: number): string {
@@ -63,25 +68,35 @@ export function chartChurnRateColor(rate: number, rates: number[]): string {
   return CHART.churnScale[idx];
 }
 
-export const chartTooltipStyle = {
-  backgroundColor: SB.canvas,
-  border: `1px solid ${SB.hairline}`,
-  borderRadius: 6,
-  fontSize: 12,
-  color: SB.ink,
-};
-
-export const chartTick = { fontSize: 11, fill: SB.inkMute };
-
-/** Risk tier colors (dashboard pie, prediction result) */
-export const RISK = {
-  low: CHART.stayed,
-  medium: "#644fc1",
-  high: CHART.churned,
-} as const;
-
 export function riskLevelColor(level: string): string {
   if (level === "High") return RISK.high;
   if (level === "Medium") return RISK.medium;
   return RISK.low;
+}
+
+export function buildChartTheme(resolvedTheme: ResolvedTheme) {
+  const isDark = resolvedTheme === "dark";
+  return {
+    grid: isDark ? "#2a2a2a" : SB.hairlineCool,
+    tick: { fontSize: 11, fill: isDark ? "#9a9a9a" : SB.inkMute },
+    tooltip: {
+      backgroundColor: isDark ? "#1c1c1c" : SB.canvas,
+      border: `1px solid ${isDark ? "#333333" : SB.hairline}`,
+      borderRadius: 6,
+      fontSize: 12,
+      color: isDark ? "#fafafa" : SB.ink,
+    },
+    rawLine: isDark ? "#707070" : CHART.rawLine,
+    activeDotStroke: isDark ? "#1c1c1c" : SB.canvas,
+  };
+}
+
+/** @deprecated use useChartTheme() */
+export const chartTooltipStyle = buildChartTheme("light").tooltip;
+/** @deprecated use useChartTheme() */
+export const chartTick = buildChartTheme("light").tick;
+
+export function useChartTheme() {
+  const { resolvedTheme } = useTheme();
+  return useMemo(() => buildChartTheme(resolvedTheme), [resolvedTheme]);
 }
