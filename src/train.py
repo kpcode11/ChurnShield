@@ -26,13 +26,15 @@ def train_model(tune: bool = False, config_path: str = "config.yaml"):
     if tune:
         logger.info("Running hyperparameter tuning...")
         param_grid = {
-            'max_depth': [2, 3],
+            'max_depth': [3, 4, 5],
             'learning_rate': [0.01, 0.05, 0.1],
-            'n_estimators': [50, 100],
+            'n_estimators': [100, 200, 300],
             'subsample': [0.7, 0.8, 1.0],
             'colsample_bytree': [0.7, 0.8, 1.0],
             'min_child_weight': [5, 7, 10],
-            'gamma': [0.5, 1, 5],
+            'gamma': [0.3, 1, 3],
+            'reg_alpha': [0.1, 1, 5],
+            'reg_lambda': [1, 3, 5],
         }
         
         base_model = XGBClassifier(

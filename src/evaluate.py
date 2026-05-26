@@ -27,6 +27,9 @@ def save_metrics(y_test, y_pred, y_prob, threshold, output_path='outputs/metrics
 
     cm = confusion_matrix(y_test, y_pred).tolist()
 
+    # Compute the naive baseline (always predict Not Churned)
+    churn_rate = float(y_test.mean())
+
     metrics = {
         "accuracy":   round(accuracy_score(y_test, y_pred), 4),
         "auc_roc":    round(roc_auc_score(y_test, y_prob), 4),
@@ -38,9 +41,17 @@ def save_metrics(y_test, y_pred, y_prob, threshold, output_path='outputs/metrics
         "class_labels": ["Not Churned", "Churned"],
         "train_size": None,
         "test_size":  len(y_test),
-        "model":      "XGBoost"
+        "model":      "XGBoost",
+        "vs_naive_baseline": {
+            "description": "Model that always predicts Not Churned",
+            "accuracy": round(1 - churn_rate, 4),
+            "auc_roc":  0.500,
+            "f1_churn": 0.000,
+            "recall":   0.000
+        }
     }
 
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'w') as f:
         json.dump(metrics, f, indent=2)
 
@@ -131,7 +142,7 @@ def evaluate_model(model=None, config_path: str = "config.yaml", retune_if_neede
     plt.title("Precision-Recall Curve")
     plt.xlabel("Recall")
     plt.ylabel("Precision")
-    plt.savefig(os.path.join(plots_dir, "pr_curve.png"), dpi=150)
+    plt.savefig(os.path.join(plots_dir, "precision_recall_curve.png"), dpi=150)
     plt.close()
     
     # 3. Confusion Matrix Heatmap (Normalised)

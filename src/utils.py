@@ -38,13 +38,22 @@ def ensure_dir(file_path: str):
     if directory and not os.path.exists(directory):
         os.makedirs(directory, exist_ok=True)
 
+def resolve_path(path: str) -> str:
+    """Resolve paths relative to the project root."""
+    if not os.path.isabs(path):
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        return os.path.join(project_root, path)
+    return path
+
 def save_object(obj, path: str):
     """Save a Python object via joblib."""
+    path = resolve_path(path)
     ensure_dir(path)
     joblib.dump(obj, path)
 
 def load_object(path: str):
     """Load a Python object via joblib."""
+    path = resolve_path(path)
     return joblib.load(path)
 
 def sanity_check(model, X_train, y_train, X_test, y_test):
