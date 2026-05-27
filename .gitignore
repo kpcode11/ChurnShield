@@ -20,4 +20,5 @@ model/*.pkl
 # OS
 .DS_Store
 Thumbs.db
-*.md
+4.md
+DESIGN.md
