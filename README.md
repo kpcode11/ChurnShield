@@ -18,7 +18,33 @@ Here is the detailed workflow of how data moves through the system:
 
 ## 1. Machine Learning & Dataset Workflow (`src/` & `data/`)
 
-The heart of ChurnShield is an **XGBoost Classifier**. XGBoost was chosen because it excels at tabular datasets and easily integrates with SHAP for explainable AI.
+The heart of ChurnShield is an **XGBoost Classifier**. 
+
+### What is XGBoost and Why Was It Chosen?
+**XGBoost (Extreme Gradient Boosting)** is a highly efficient, scalable machine learning library based on the gradient boosting framework. By definition, it works by building an ensemble of sequential decision trees, where each subsequent tree rigorously attempts to correct the errors (residuals) made by the combination of all previous trees.
+
+We chose XGBoost over other algorithms (like Logistic Regression, SVM, Random Forest, or Neural Networks) for several key reasons:
+1. **State-of-the-Art Performance on Tabular Data**: E-commerce customer data is structured (tabular features like `Tenure`, `OrderCount`, `SatisfactionScore`). XGBoost consistently crushes both traditional models and deep learning approaches on structured, spreadsheet-like data.
+2. **Complex, Non-Linear Interactions**: Variables in e-commerce interact in complicated ways. For example, high application usage usually indicates loyalty, but if it is paired with recent support complaints, it flags severe churn risk. XGBoost's deep tree mapping natively captures these non-linear interactions without needing manual feature engineering.
+3. **Imbalance Handling**: Churn datasets are inherently imbalanced (the vast majority of people stay; only a fraction churn). XGBoost features native hyperparameters (like `scale_pos_weight`) to heavily penalize missing a churner, automatically handling this imbalance.
+4. **Explainability**: Unlike Neural Networks, which are a "black box," XGBoost is highly interpretable. We can extract exact feature importance (Gain/Weight) and integrate seamlessly with explainability frameworks like SHAP or Anchor.
+
+### How XGBoost Works in ChurnShield
+In the context of this project, XGBoost maps historical customer behaviors and demographics to a future risk state. 
+- **Training**: It analyzes the patterns in `ecommerce_churn_enhanced.csv` to find hidden threshold rules that cleanly separate loyal customers from those who abandon the platform.
+- **Inference**: During live prediction via the FastAPI backend, the model evaluates new customer data through its ensemble of trees to compute a continuous probability (e.g., `0.85`) of churn.
+- **Explainable Insights**: We extract internal tree split metrics to populate the global "Top churn drivers" on the dashboard. Furthermore, we evaluate its pathways locally to provide human-readable explanations detailing exactly *why* a specific user is flagged as high-risk.
+
+### Explainable AI (XAI): SHAP and Anchor
+Because we are predicting something as deeply human as customer loyalty, providing just a percentage (e.g., "85% risk") is not actionable for support agents. To solve this, our project uses two different Explainable AI frameworks:
+
+**1. SHAP (SHapley Additive exPlanations)**
+* **What it is**: SHAP is a framework based on cooperative game theory. It breaks down a machine learning prediction by treating each feature (e.g., `Tenure`, `OrderCount`) as a "player" cooperating to reach the final probability.
+* **How we use it**: During a single customer prediction (`/predict`), we run the XGBoost `TreeExplainer` to calculate the exact Shapley values. This allows the API to return the **Top 3 Risk Factors** isolated specifically for *that specific customer* (e.g., "This customer has +15% risk specifically because their Complain score is 1").
+
+**2. Anchor Explanations & Calibration**
+* **What it is**: Anchor rules provide local, high-precision "if-then" conditions. An anchor says "If A and B are true, the prediction is practically guaranteed."
+* **How we use it**: While SHAP provides numerical attribution, we use Anchor (`src/anchor_calibrate.py`) sequentially *after* XGBoost to calibrate probabilities. If a customer hits deeply entrenched negative conditions that we know from business logic represent extreme risk, the Anchor heuristic "anchors" or recalibrates the raw XGBoost probability to reflect that absolute business truth, improving domain relevance.
 
 ### Dataset Handling
 * **Data Generation**: Instead of using raw, leaky Kaggle data, we use a synthetic data generator (`generate_churn_dataset.py`). This script creates a realistic dataset of 5,630 e-commerce customers with 28 features (e.g., `Tenure`, `SatisfactionScore`, `Complain`, `LastLoginDaysAgo`). 
@@ -35,11 +61,26 @@ When you train the model, the following pipeline executes:
 ### Evaluation (`src/evaluate.py`)
 The model is evaluated and the threshold for predicting "Churn" is optimized to maximize the **F1-Score**. It outputs `outputs/metrics.json` (which contains accuracy, AUC-ROC, recall, and a naive baseline comparison) and saves visualizations (ROC curves, Confusion Matrices) to `outputs/plots/`.
 
+#### Understanding Our Evaluation Metrics
+Because customer churn inherently deals with imbalanced data (the vast majority stay, a small percentage leave), standard metrics can be misleading. Here is how we measure success in ChurnShield:
+* **Threshold**: XGBoost outputs a continuous probability (0.0 to 1.0). The threshold is the numerical cutoff where we formally classify a user as "At Risk of Churn". Instead of a blind `0.50` default, `evaluate.py` mathematically sweeps all possibilities to find the exact threshold that maximizes the F1-Score.
+* **Accuracy**: The overall percentage of correct predictions. *In this project*: This is recorded but taken with a grain of salt. If 83% of customers naturally stay, a broken "dumb" model that just predicts "Stay" for everyone achieves 83% accuracy but offers zero business value.
+* **Recall (Sensitivity)**: Out of all the customers who *actually* churned, what percentage did the model successfully catch? *In this project*: High recall is crucial so no at-risk customer slips away without a retention intervention (minimizing False Negatives).
+* **Precision**: Out of everyone the model *predicted* would churn, how many actually did? *In this project*: High precision ensures we don't waste expensive retention campaigns or discounts on customers who were perfectly happy and going to stay anyway (minimizing False Positives).
+* **F1-Score**: The harmonic mean of Precision and Recall. *In this project*: This is our "North Star" metric. It forces the model to strike the perfect balance between catching as many churners as possible without firing off too many false alarms.
+* **ROC-AUC (Receiver Operating Characteristic - Area Under Curve)**: Measures the model's overall ability to segregate the "Churn" class from the "Stay" class across *all* possible thresholds. *In this project*: An AUC of 0.5 is a random coin toss; 1.0 is perfect. This metric operates independent of the threshold, proving that our XGBoost feature map fundamentally works.
+
 ---
 
 ## 2. Backend API Workflow (`backend/`)
 
 The backend is built with **FastAPI** (Python) and serves as the bridge between the heavy ML scripts and the lightweight frontend.
+
+### Why FastAPI instead of Flask or Django?
+We chose FastAPI over traditional frameworks for three critical reasons tailored to Machine Learning applications:
+1. **Pydantic Validation**: Machine learning models crash spectacularly if fed bad data types (e.g., passing a string instead of an int for `Tenure`). FastAPI uses Pydantic to strictly validate the JSON payload *before* it reaches the ML functions.
+2. **Speed & Async**: FastAPI is built on Starlette and supports asynchronous endpoints (`async def`). In bulk-prediction scenarios, this non-blocking nature allows the server to handle concurrent frontend requests much faster than standard Flask.
+3. **Overhead & Auto-Docs**: Django is a "batteries-included" monolith utilizing an ORM, which is unnecessary here since we are serving an ML model, not a relational database app. FastAPI is micro-framework lightweight but natively generates interactive Swagger UI documentation (`/docs`), making API-Frontend integration a breeze.
 
 ### Endpoints and Logic
 * **`/predict` (Single Inference)**: The frontend sends a JSON payload of a single customer's features. The backend calls `src.predict.predict()`. The ML script runs the data through the saved Encoders, feeds it to the XGBoost model, and uses **SHAP (SHapley Additive exPlanations)** to calculate the top 3 specific features that drove this customer's risk score. It returns the churn probability, risk level (High/Medium/Low), and the SHAP factors.
