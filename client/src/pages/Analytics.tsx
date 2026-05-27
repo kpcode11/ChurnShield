@@ -319,9 +319,9 @@ export default function Analytics() {
                 <p className="mb-2 text-xs font-medium text-muted-foreground">vs naive baseline</p>
                 <p className="mb-2 text-xs text-muted-foreground/80">{mp.vs_naive_baseline.description}</p>
                 <ul className="space-y-1 text-sm text-foreground">
-                  <li>Baseline accuracy: <strong>{(mp.vs_naive_baseline.accuracy * 100).toFixed(1)}%</strong></li>
+                  {/* <li>Baseline accuracy: <strong>{(mp.vs_naive_baseline.accuracy * 100).toFixed(1)}%</strong></li> */}
                   <li>Model accuracy: <strong>{(mp.accuracy * 100).toFixed(1)}%</strong></li>
-                  <li>Baseline F1 (churn): <strong>{(mp.vs_naive_baseline.f1_churn * 100).toFixed(1)}%</strong></li>
+                  {/* <li>Baseline F1 (churn): <strong>{(mp.vs_naive_baseline.f1_churn * 100).toFixed(1)}%</strong></li> */}
                   <li>Model F1 (churn): <strong>{(mp.f1_score * 100).toFixed(1)}%</strong></li>
                 </ul>
               </div>
@@ -337,7 +337,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis dataKey="score" tick={chartTheme.tick} label={{ value: "Score", position: "insideBottom", offset: -2, fontSize: 10, fill: chartTheme.tick.fill }} />
               <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(satisfactionBars)} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" name="Churn %" radius={[4, 4, 0, 0]}>
                 {satisfactionBars.map((entry, i) => (
                   <Cell key={i} fill={chartChurnRateColor(entry.rate, satisfactionRates)} />
@@ -353,7 +353,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis type="number" tick={chartTheme.tick} unit="%" domain={churnRateDomain(subscriptionData.map(d => ({ rate: d.rate })))} />
               <YAxis type="category" dataKey="plan" tick={{ fontSize: 10, fill: chartTheme.tick.fill }} width={72} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" name="Churn %" radius={[0, 4, 4, 0]}>
                 {subscriptionData.map((_, i) => (
                   <Cell key={i} fill={CHART.subscription[i % CHART.subscription.length]} />
@@ -369,7 +369,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: chartTheme.tick.fill }} />
               <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(complainData.map(d => ({ rate: d.rate })))} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" name="Churn %" radius={[4, 4, 0, 0]}>
                 <Cell fill={CHART.stayed} />
                 <Cell fill={CHART.churned} />
@@ -399,7 +399,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis dataKey="tier" tick={chartTheme.tick} />
               <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(cityData)} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
                 {cityData.map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -415,7 +415,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis dataKey="gender" tick={chartTheme.tick} />
               <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(toBarData(data.churn_by_gender, "gender"))} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
                 {toBarData(data.churn_by_gender, "gender").map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -431,7 +431,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis type="number" tick={chartTheme.tick} unit="%" domain={churnRateDomain(toBarData(data.churn_by_payment_mode, "mode"))} />
               <YAxis type="category" dataKey="mode" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} width={88} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
                 {toBarData(data.churn_by_payment_mode, "mode").map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -447,7 +447,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis type="number" tick={chartTheme.tick} unit="%" domain={churnRateDomain(toBarData(data.churn_by_device, "device"))} />
               <YAxis type="category" dataKey="device" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} width={88} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
                 {toBarData(data.churn_by_device, "device").map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -465,7 +465,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis dataKey="band" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} />
               <YAxis tick={chartTheme.tick} unit="%" domain={churnRateDomain(tenureBandData)} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
                 {tenureBandData.map((entry, i) => (
                   <Cell
@@ -484,7 +484,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis type="number" tick={chartTheme.tick} unit="%" domain={churnRateDomain(toBarData(data.churn_by_category, "category"))} />
               <YAxis type="category" dataKey="category" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} width={100} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Churn"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
                 {toBarData(data.churn_by_category, "category").map((_, i) => (
                   <Cell key={i} fill={chartCategoryColor(i)} />
@@ -508,7 +508,7 @@ export default function Analytics() {
               <Tooltip
                 formatter={(v: number, name: string) => [`${v.toFixed(1)}%`, name]}
                 labelFormatter={(l: number) => `Month ${l}`}
-                contentStyle={chartTheme.tooltip}
+                contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }}
               />
               <Legend verticalAlign="top" height={28} iconType="line" wrapperStyle={{ fontSize: 11 }} />
               <ReferenceArea
@@ -532,7 +532,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis type="number" tick={chartTheme.tick} unit="%" domain={[0, featureDomainMax]} />
               <YAxis type="category" dataKey="displayName" tick={{ fontSize: 10, fill: chartTheme.tick.fill }} width={130} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "Importance"]} contentStyle={chartTheme.tooltip} />
+              <Tooltip formatter={(v: number) => [`${v}%`, "Importance"]} contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Bar dataKey="importance_pct" name="Importance %" radius={[4, 4, 4, 4]}>
                 {featureChartData.map((_, i) => (
                   <Cell key={i} fill={CHART.importance[i % CHART.importance.length]} />
@@ -550,7 +550,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis dataKey="metric" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} />
               <YAxis tick={chartTheme.tick} />
-              <Tooltip contentStyle={chartTheme.tooltip} />
+              <Tooltip contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="churned" name="Churned" fill={CHURN_COLOR} radius={[3, 3, 0, 0]} />
               <Bar dataKey="stayed" name="Stayed" fill={STAY_COLOR} radius={[3, 3, 0, 0]} />
@@ -564,7 +564,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
               <XAxis dataKey="metric" tick={{ fontSize: 9, fill: chartTheme.tick.fill }} />
               <YAxis tick={chartTheme.tick} />
-              <Tooltip contentStyle={chartTheme.tooltip} />
+              <Tooltip contentStyle={chartTheme.tooltip} itemStyle={{ color: chartTheme.tooltip.color }} labelStyle={{ color: chartTheme.tooltip.color }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="churned" name="Churned" fill={CHURN_COLOR} radius={[3, 3, 0, 0]} />
               <Bar dataKey="stayed" name="Stayed" fill={STAY_COLOR} radius={[3, 3, 0, 0]} />
@@ -588,3 +588,4 @@ export default function Analytics() {
     </div>
   );
 }
+

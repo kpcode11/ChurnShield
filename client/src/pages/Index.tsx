@@ -163,7 +163,10 @@ const Index = () => {
                   <span className="ml-1 text-xs text-muted-foreground">{value}</span>
                 )}
               />
-              <Tooltip contentStyle={chartTheme.tooltip} />
+              <Tooltip 
+                contentStyle={chartTheme.tooltip} 
+                itemStyle={{ color: chartTheme.tooltip.color }} 
+              />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
@@ -186,7 +189,12 @@ const Index = () => {
             <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
             <XAxis type="number" tick={chartTheme.tick} unit="%" domain={[0, 60]} />
             <YAxis type="category" dataKey="score" tick={chartTheme.tick} width={80} />
-            <Tooltip formatter={(v: number) => [`${v}%`, "Churn rate"]} contentStyle={chartTheme.tooltip} />
+            <Tooltip 
+              formatter={(v: number) => [`${v}%`, "Churn rate"]} 
+              contentStyle={chartTheme.tooltip} 
+              itemStyle={{ color: chartTheme.tooltip.color }} 
+              labelStyle={{ color: chartTheme.tooltip.color }} 
+            />
             <Bar dataKey="rate" name="Churn %" radius={[4, 4, 4, 4]}>
               {satisfactionData.map((entry, i) => (
                 <Cell key={i} fill={chartChurnRateColor(entry.rate, satisfactionRates)} />
