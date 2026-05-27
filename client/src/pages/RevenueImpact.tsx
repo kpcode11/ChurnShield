@@ -72,19 +72,20 @@ export default function RevenueImpact() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Revenue Impact Calculator</h1>
-        <p className="text-sm text-muted-foreground mt-1">Calculate ROI for retention campaigns using real churn data</p>
+    <div className="space-y-6 pb-10">
+      <div className="bg-[#001e2b] text-white -mx-6 lg:-mx-8 -mt-6 lg:-mt-8 px-6 lg:px-8 py-10 pb-16 rounded-b-[24px]">
+        <h1 className="text-4xl font-medium tracking-tight text-white mb-2">Revenue Impact Calculator</h1>
+        <p className="text-[#a8b3bc] mt-1 font-normal text-lg">Calculate ROI for retention campaigns using real churn data</p>
         {analytics && (
-          <div className="mt-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-xs text-blue-700 font-medium">
+          <div className="mt-4 px-3 py-1.5 bg-[#00ed64]/10 border border-[#00ed64]/20 rounded-md inline-block">
+            <p className="text-xs text-[#00ed64] font-medium">
               ℹ️ At-Risk Customers initialized from real data: {analytics.churned_customers.toLocaleString()} churned customers
             </p>
           </div>
         )}
       </div>
 
+      <div className="-mt-12 relative z-10 px-0 space-y-6">
       {loading ? (
         <div className="bg-card rounded-lg p-12 card-shadow flex items-center justify-center">
           <p className="text-sm text-muted-foreground">Loading analytics data...</p>
@@ -281,6 +282,7 @@ export default function RevenueImpact() {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

@@ -87,13 +87,13 @@ export default function AIMessages() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">AI Message Generator</h1>
-        <p className="text-sm text-muted-foreground mt-1">Generate personalized retention messages for customer segments</p>
+    <div className="space-y-6 pb-10">
+      <div className="bg-[#001e2b] text-white -mx-6 lg:-mx-8 -mt-6 lg:-mt-8 px-6 lg:px-8 py-10 pb-16 rounded-b-[24px]">
+        <h1 className="text-4xl font-medium tracking-tight text-white mb-2">AI Message Generator</h1>
+        <p className="text-[#a8b3bc] mt-1 font-normal text-lg">Generate personalized retention messages for customer segments</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 -mt-12 relative z-10 px-0">
         {/* Settings */}
         <div className="bg-card rounded-lg p-6 card-shadow space-y-4">
           <h3 className="text-sm font-semibold text-card-foreground">Message Settings</h3>
